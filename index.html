@@ -465,15 +465,26 @@
       }
     }
 
-    function doLogout() {
-      if(confirm('確定要登出並清除紀錄嗎？')) {
+function doLogout() {
+      // 1. 為了防止誤觸，還是保留一個簡單的詢問
+      if(confirm('確定要登出嗎？')) {
+        
+        // 2. 清除手機暫存 (這樣下次進來才不會自動填入)
         localStorage.removeItem('jci_acc');
         localStorage.removeItem('jci_pwd');
         
-        if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-           liff.logout();
-        }
-        location.reload(); 
+        // 3. 清空輸入框 (視覺上清乾淨)
+        document.getElementById('login-acc').value = "";
+        document.getElementById('login-pwd').value = "";
+        document.getElementById('login-error').textContent = "";
+
+        // 4. ★★★ 關鍵修改：不重新整理 (Reload)，直接切換介面 ★★★
+        // 這樣做最快，而且不會觸發 LIFF 自動登入邏輯
+        document.querySelector('.page-container').style.display = 'none'; // 隱藏通訊錄
+        document.getElementById('detail-view').style.display = 'none';    // 隱藏詳細頁
+        document.getElementById('login-view').style.display = 'flex';     // 顯示登入頁
+        
+        // 不需要 liff.logout()，因為在 LINE App 裡那個功能沒什麼用
       }
     }
 
