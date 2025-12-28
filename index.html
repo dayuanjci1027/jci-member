@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>會員通訊錄</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    /* CSS 樣式區 (與原本相同，略作壓縮) */
+    :root { --jci-blue: #0097D7; --jci-navy: #003C88; --bg-color: #f3f6f9; }
+    body { font-family: sans-serif; background: var(--bg-color); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #fff; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--jci-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #loading-text { font-size: 14px; color: #666; font-weight: bold; }
+    
+    /* 登入與主頁面隱藏 */
+    #login-view, .page-container, #detail-view { display: none; }
+    
+    /* 以下為你原本的 CSS 樣式 (精簡版) */
+    .login-banner { height: 260px; background: linear-gradient(135deg, var(--jci-navy), var(--jci-blue)); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 0 0 30px 30px; }
+    .login-form { width: 85%; max-width: 360px; margin: 30px auto; display: flex; flex-direction: column; gap: 15px; }
+    .login-input { padding: 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; width: 100%; box-sizing: border-box; }
+    .login-btn { padding: 14px; background: var(--jci-navy); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; }
+    
+    .header-area { background: white; padding-bottom: 15px; border-radius: 0 0 24px 24px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .org-name { font-size: 24px; font-weight: 800; color: var(--jci-navy); padding-top: 20px; }
+    .member-card { background: #fff; margin: 10px 16px; padding: 16px; border-radius: 16px; border-left: 5px solid var(--jci-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
+    
+    #detail-view { position: fixed; inset: 0; background: #fff; z-index: 100; overflow-y: auto; }
+    .float-back-btn { position: fixed; top: 20px; left: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 20px; }
+    .dt-row { border-bottom: 1px solid #eee; padding: 12px 0; }
+    .dt-label { font-size: 12px; color: #888; }
+    .dt-val { font-size: 16px; color: #333; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div id="loading-mask">
+    <div class="spinner"></div>
+    <div id="loading-text">正在連接資料庫...</div>
+  </div>
+
+  <div id="login-view">
+    <div class="login-banner">
+      <div style="font-size:40px; margin-bottom:10px;">🔒</div>
+      <div style="font-size:24px; font-weight:bold;">會員通訊錄</div>
+      <div id="banner-msg" style="font-size:14px; opacity:0.9; margin-top:5px;">請輸入身分證字號與出生年月日</div>
+    </div>
+    <div class="login-form">
+      <input type="text" id="login-acc" class="login-input" placeholder="身分證字號 (帳號)" style="text-transform:uppercase;">
+      <input type="password" id="login-pwd" class="login-input" placeholder="生日 (例如: 19900101)">
+      <div id="login-error" style="color:red; text-align:center; font-size:14px;"></div>
+      <button class="login-btn" onclick="attemptLogin()">登入</button>
+    </div>
+  </div>
+
+  <div class="page-container">
+    <div class="header-area">
+      <div class="org-name">大園國際青年商會</div>
+      <div style="font-size:12px; color:#888; margin-top:5px;">Github V4.0 極速版</div>
+      <div style="padding: 15px 20px 0;">
+        <input id="search" class="login-input" style="border-radius:50px;" placeholder="搜尋 姓名 / 電話 / 公司..." onkeyup="filterList()">
+      </div>
+      <button onclick="doLogout()" style="margin-top:10px; background:none; border:none; color:#999; text-decoration:underline;">登出</button>
+    </div>
+    <div id="list-view" style="padding-bottom:60px;"></div>
+  </div>
+
+  <div id="detail-view">
+    <a href="javascript:void(0)" class="float-back-btn" onclick="backToList()">←</a>
+    <div style="padding: 60px 20px;">
+      <div style="text-align:center;">
+        <img id="dt-img" style="width:100px; height:100px; border-radius:50%; background:#eee; object-fit:cover;">
+        <h2 id="dt-name" style="margin:10px 0 5px; color:#003C88;"></h2>
+        <div id="dt-role" style="color:#666;"></div>
+      </div>
+      <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+      <div id="dt-table"></div>
+    </div>
+  </div>
+
+<script>
+  // ==========================================
+  // ★★★ 設定區 (請填入你的資訊) ★★★
+  // ==========================================
+  const LIFF_ID = "2008793289-PIQx5rgr";
+  
+  // ★★★ 請將這裡換成你剛剛部署產生的 GAS 網址 ★★★
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
+
+  // 全域變數
+  let membersData = [];
+  let labelsData = {};
+  
+  // 程式入口
+  window.onload = async function() {
+    try {
+      // 1. 平行處理：同時初始化 LIFF 和 下載會員資料
+      const [liffOk, apiRes] = await Promise.all([
+        initLiff(),
+        fetchMembers()
+      ]);
+
+      // 2. 資料處理
+      if(apiRes.status === 'success') {
+         membersData = apiRes.members;
+         labelsData = apiRes.labels;
+      } else {
+         alert("資料載入失敗: " + apiRes.message);
+      }
+
+      // 3. 身分驗證處理
+      if (liffOk && liff.isLoggedIn()) {
+         updateLoading("驗證身分中...");
+         const profile = await liff.getProfile();
+         checkBinding(profile.userId);
+      } else {
+         // 沒登入 LIFF，檢查是否有本機暫存
+         checkLocalStorage();
+      }
+
+    } catch (err) {
+      alert("系統啟動錯誤：" + err);
+      showLogin(); // 發生錯誤還是讓使用者嘗試手動登入
+    }
+  };
+
+  // --- 核心功能 ---
+
+  function initLiff() {
+    return new Promise((resolve) => {
+      liff.init({ liffId: LIFF_ID })
+        .then(() => resolve(true))
+        .catch(err => {
+          console.error("LIFF Init Error", err);
+          resolve(false); // 失敗也讓程式繼續跑，只是不能自動登入
+        });
+    });
+  }
+
+  function fetchMembers() {
+    updateLoading("下載最新的會員資料...");
+    return fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getMembers' })
+    }).then(res => res.json());
+  }
+
+  function checkBinding(userId) {
+    fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success') {
+         document.getElementById('login-acc').value = res.acc;
+         document.getElementById('login-pwd').value = res.pwd;
+         attemptLogin(true);
+      } else {
+         checkLocalStorage(); // 驗證失敗切回手動
+      }
+    });
+  }
+
+  function attemptLogin(isAuto) {
+    const acc = document.getElementById('login-acc').value.trim().toUpperCase();
+    const pwd = document.getElementById('login-pwd').value.trim();
+    const errDiv = document.getElementById('login-error');
+
+    if (!acc || !pwd) {
+      if(!isAuto) errDiv.innerText = "請輸入帳號密碼";
+      return;
+    }
+
+    const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
+
+    if (user) {
+      if (user.role && user.role.includes('前會員')) {
+         if(!isAuto) errDiv.innerText = "前會員無法登入";
+         return;
+      }
+      
+      // 登入成功
+      localStorage.setItem('jci_acc', acc);
+      localStorage.setItem('jci_pwd', pwd);
+      
+      // 紀錄 Log (不等待)
+      if (!isAuto) {
+        fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) });
+      }
+
+      showList();
+    } else {
+      if(isAuto) {
+         showLogin(); // 自動登入失敗，顯示登入頁
+      } else {
+         errDiv.innerText = "帳號或密碼錯誤";
+      }
+    }
+  }
+
+  // --- UI 切換與輔助 ---
+
+  function updateLoading(text) {
+    document.getElementById('loading-text').innerText = text;
+  }
+
+  function showLogin() {
+    document.getElementById('loading-mask').style.opacity = '0';
+    setTimeout(() => {
+       document.getElementById('loading-mask').style.display = 'none';
+       document.getElementById('login-view').style.display = 'flex';
+    }, 500);
+  }
+
+  function showList() {
+    document.getElementById('loading-mask').style.display = 'none';
+    document.getElementById('login-view').style.display = 'none';
+    document.querySelector('.page-container').style.display = 'block';
+    renderList(membersData);
+  }
+
+  function checkLocalStorage() {
+    const acc = localStorage.getItem('jci_acc');
+    const pwd = localStorage.getItem('jci_pwd');
+    if (acc && pwd) {
+      document.getElementById('login-acc').value = acc;
+      document.getElementById('login-pwd').value = pwd;
+      attemptLogin(true);
+    } else {
+      showLogin();
+    }
+  }
+  
+  function doLogout() {
+     if(confirm("確定登出?")) {
+        localStorage.clear();
+        if(liff.isLoggedIn()) liff.logout();
+        location.reload();
+     }
+  }
+
+  // --- 渲染列表 ---
+  function renderList(data) {
+    const div = document.getElementById('list-view');
+    let html = "";
+    data.forEach((m, idx) => {
+      // 找出原始 index (為了簡單這裡直接傳遞物件參考更好，但維持你習慣的 openDetail)
+      const realIdx = membersData.indexOf(m); 
+      html += `
+        <div class="member-card" onclick="openDetail(${realIdx})">
+          <div style="font-size:18px; font-weight:bold;">${m.name} <span style="font-size:12px; font-weight:normal; background:#eee; padding:2px 5px; border-radius:4px;">${m.role||""}</span></div>
+          <div style="color:#666; font-size:14px; margin-top:5px;">${m.company||""}</div>
+          <div style="color:#0097D7; font-weight:bold; margin-top:8px;">${m.phone||""}</div>
+        </div>
+      `;
+    });
+    if(data.length===0) html="<div style='text-align:center; padding:20px; color:#999;'>查無資料</div>";
+    div.innerHTML = html;
+  }
+
+  function filterList() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const res = membersData.filter(m => (m.name+m.phone+m.company).toLowerCase().includes(q));
+    renderList(res);
+  }
+
+  function openDetail(idx) {
+    const m = membersData[idx];
+    document.getElementById('dt-name').innerText = m.name;
+    document.getElementById('dt-role').innerText = m.role;
+    document.getElementById('dt-img').src = m.photoUrl || "";
+    document.getElementById('dt-img').onerror = function(){this.style.display='none'};
+    
+    let html = "";
+    const cols = ["C","F","G","H","I","J","K","L","M","N"];
+    const keyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
+    
+    cols.forEach(c => {
+       if(m[keyMap[c]]) {
+         html += `<div class="dt-row"><div class="dt-label">${labelsData[c]||c}</div><div class="dt-val">${m[keyMap[c]]}</div></div>`;
+       }
+    });
+    // 電話按鈕
+    if(m.phone) {
+       html += `<div style="margin-top:20px; text-align:center;"><a href="tel:${m.phone}" style="background:#28a745; color:white; padding:10px 40px; border-radius:50px; text-decoration:none; font-weight:bold;">📞 撥打電話</a></div>`;
+    }
+
+    document.getElementById('dt-table').innerHTML = html;
+    document.getElementById('detail-view').style.display = 'block';
+  }
+
+  function backToList() { document.getElementById('detail-view').style.display = 'none'; }
+</script>
+</body>
+</html>
