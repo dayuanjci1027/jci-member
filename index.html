@@ -319,10 +319,10 @@
     // ==========================================
     // ★ 設定區
     // ==========================================
-    const MY_LIFF_ID = "2008793289-PIQx5rgr";
+    const MY_LIFF_ID = "2008793289-PIQx5rgr"; 
     
-    // ★★★ 請確認這是你正確的 GAS 網址 ★★★
-    const GAS_API_URL = "https://script.google.com/macros/s/你的部署ID/exec"; 
+    // ★★★ 請確認這還是你那個 V5.0 的 GAS 網址 ★★★
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
 
     // 全域變數
     let membersData = [];
@@ -331,43 +331,35 @@
     let sortOrder = 0;
 
     // ==========================================
-    // ★ 系統啟動 (邏輯分流版)
+    // ★ 系統啟動
     // ==========================================
     window.onload = async function() {
       try {
-        // 1. 平行處理：初始化 LIFF & 下載資料
+        // 平行處理：初始化 LIFF & 下載資料
         const [liffResult, apiResult] = await Promise.all([
           initLiff(),
           fetchMembers()
         ]);
 
-        // 2. 資料填入
+        // 資料處理
         if(apiResult.status === 'success') {
            membersData = apiResult.members;
            labelsData = apiResult.labels;
         } else {
-           alert("資料載入失敗: " + apiResult.message);
+           throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
         }
 
-        // 3. ★★★ 關鍵分流邏輯 ★★★
-        if (liff.isInClient()) {
-           // ---> 情境 A: 在 LINE App 裡面 (LIFF) <---
-           // 強制只走「綁定驗證」，完全不看暫存
-           if (liffResult && liff.isLoggedIn()) {
-               updateLoading("正在驗證身分 (LIFF)...");
-               const profile = await liff.getProfile();
-               checkLineBinding(profile.userId);
-           } else {
-               // 在 LINE 裡卻沒登入？罕見情況，直接秀登入頁
-               showLoginView();
-           }
+        // 身分驗證
+        if (liffResult && liff.isLoggedIn()) {
+           updateLoading("正在驗證身分...");
+           const profile = await liff.getProfile();
+           checkLineBinding(profile.userId);
         } else {
-           // ---> 情境 B: 在一般瀏覽器 (網頁版) <---
-           // 維持便利性，優先檢查暫存
            checkLocalStorage();
         }
 
       } catch (e) {
+        // 這裡就是你截圖報錯的地方，現在修正了連線方式應該就不會跳了
         alert("啟動錯誤：" + e);
         showLoginView();
       }
@@ -384,20 +376,24 @@
       });
     }
 
+    // ★★★ 修正點 1：加入 headers 防止 iPhone 報錯 ★★★
     function fetchMembers() {
-      updateLoading("下載最新的會員資料...");
+      updateLoading("下載會員資料...");
       return fetch(GAS_API_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 這行救命丹加回去了
         body: JSON.stringify({ action: 'getMembers' })
       }).then(res => res.json());
     }
 
     // ==========================================
-    // ★ 驗證邏輯 (LIFF 專用)
+    // ★ 驗證與登入邏輯
     // ==========================================
+    // ★★★ 修正點 2：這裡也加入 headers ★★★
     function checkLineBinding(userId) {
       fetch(GAS_API_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 這裡也加了
         body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
       })
       .then(res => res.json())
@@ -406,39 +402,27 @@
             updateLoading("驗證成功，登入中...");
             document.getElementById('login-acc').value = res.acc;
             document.getElementById('login-pwd').value = res.pwd;
-            // 傳入 true 代表自動登入，但也傳入 isLiff=true 避免寫入暫存
-            attemptLogin(true, true);
+            attemptLogin(true);
          } else {
-            // ★★★ 驗證失敗：LIFF 用戶直接踢回登入頁，不讀取暫存 ★★★
-            alert("驗證失敗：您的 LINE ID 未綁定或是後端資料已刪除。");
-            showLoginView(); 
+            checkLocalStorage(); 
          }
       })
-      .catch((err) => {
-         alert("連線錯誤：" + err);
-         showLoginView();
-      });
+      .catch(() => checkLocalStorage());
     }
 
-    // ==========================================
-    // ★ 本機暫存邏輯 (網頁版專用)
-    // ==========================================
     function checkLocalStorage() {
       const savedAcc = localStorage.getItem('jci_acc');
       const savedPwd = localStorage.getItem('jci_pwd');
       if (savedAcc && savedPwd) {
         document.getElementById('login-acc').value = savedAcc;
         document.getElementById('login-pwd').value = savedPwd;
-        attemptLogin(true, false); // false 代表這是網頁版，可以存
+        attemptLogin(true);
       } else {
         showLoginView();
       }
     }
 
-    // ==========================================
-    // ★ 登入執行 (已修改存檔邏輯)
-    // ==========================================
-    function attemptLogin(isAuto, isLiffContext) {
+    function attemptLogin(isAuto) {
       const acc = document.getElementById('login-acc').value.trim().toUpperCase();
       const pwd = document.getElementById('login-pwd').value.trim();
       const errDiv = document.getElementById('login-error');
@@ -456,17 +440,14 @@
            return;
         }
 
-        // ★★★ 關鍵修改：只有「非 LIFF」環境才寫入暫存 ★★★
-        // 如果是 LIFF，我們就不存了，保持手機乾淨
-        if (!liff.isInClient()) {
-            localStorage.setItem('jci_acc', acc);
-            localStorage.setItem('jci_pwd', pwd);
-        }
+        localStorage.setItem('jci_acc', acc);
+        localStorage.setItem('jci_pwd', pwd);
 
-        // 紀錄 Log (只有手動登入時才記，避免自動登入洗版，可依需求調整)
+        // ★★★ 修正點 3：登入紀錄也補上 headers ★★★
         if (!isAuto) {
           fetch(GAS_API_URL, { 
              method: 'POST', 
+             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
              body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) 
           });
         }
@@ -485,8 +466,7 @@
     }
 
     function doLogout() {
-      if(confirm('確定要登出嗎？')) {
-        // 清除暫存
+      if(confirm('確定要登出並清除紀錄嗎？')) {
         localStorage.removeItem('jci_acc');
         localStorage.removeItem('jci_pwd');
         
@@ -559,7 +539,7 @@
     }
 
     // ==========================================
-    // ★ 詳細頁與滑動邏輯 (保留原樣)
+    // ★ 詳細頁邏輯 (含滑動返回)
     // ==========================================
     const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
     const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
@@ -711,6 +691,6 @@
       }
       renderList(filtered);
     }
-    </script>
+</script>
   </body>
 </html>
