@@ -315,372 +315,402 @@
       </div>
     </div>
 
-    <script>
-      // ==========================================
-      // ★ 設定區
-      // ==========================================
-      const MY_LIFF_ID = "2008793289-PIQx5rgr"; 
-      
-      // ★★★ 這裡一定要換成你部署後的 GAS 網址 (結尾 /exec) ★★★
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
+<script>
+    // ==========================================
+    // ★ 設定區
+    // ==========================================
+    const MY_LIFF_ID = "2008793289-PIQx5rgr";
+    
+    // ★★★ 請確認這是你正確的 GAS 網址 ★★★
+    const GAS_API_URL = "https://script.google.com/macros/s/你的部署ID/exec"; 
 
-      // 全域變數
-      let membersData = [];
-      let labelsData = {};
-      let activeMode = 'ALL';
-      let sortOrder = 0;
+    // 全域變數
+    let membersData = [];
+    let labelsData = {};
+    let activeMode = 'ALL';
+    let sortOrder = 0;
 
-      // ==========================================
-      // ★ 系統啟動
-      // ==========================================
-      window.onload = async function() {
-        try {
-          const [liffResult, apiResult] = await Promise.all([
-            initLiff(),
-            fetchMembers()
-          ]);
+    // ==========================================
+    // ★ 系統啟動 (邏輯分流版)
+    // ==========================================
+    window.onload = async function() {
+      try {
+        // 1. 平行處理：初始化 LIFF & 下載資料
+        const [liffResult, apiResult] = await Promise.all([
+          initLiff(),
+          fetchMembers()
+        ]);
 
-          if(apiResult.status === 'success') {
-             membersData = apiResult.members;
-             labelsData = apiResult.labels;
-          } else {
-             alert("資料載入失敗: " + apiResult.message);
-          }
-
-          if (liffResult && liff.isLoggedIn()) {
-             updateLoading("正在驗證身分...");
-             const profile = await liff.getProfile();
-             checkLineBinding(profile.userId);
-          } else {
-             checkLocalStorage();
-          }
-
-        } catch (e) {
-          alert("啟動錯誤：" + e);
-          showLoginView();
+        // 2. 資料填入
+        if(apiResult.status === 'success') {
+           membersData = apiResult.members;
+           labelsData = apiResult.labels;
+        } else {
+           alert("資料載入失敗: " + apiResult.message);
         }
-      };
 
-      function initLiff() {
-        return new Promise(resolve => {
-           liff.init({ liffId: MY_LIFF_ID })
-             .then(() => resolve(true))
-             .catch(err => {
-               console.log("LIFF Init Error:", err);
-               resolve(false); 
-             });
-        });
-      }
-
-      function fetchMembers() {
-        updateLoading("下載會員資料...");
-        return fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'getMembers' })
-        }).then(res => res.json());
-      }
-
-      // ==========================================
-      // ★ 驗證與登入邏輯
-      // ==========================================
-      function checkLineBinding(userId) {
-        fetch(GAS_API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
-        })
-        .then(res => res.json())
-        .then(res => {
-           if(res.status === 'success') {
-              updateLoading("驗證成功，登入中...");
-              document.getElementById('login-acc').value = res.acc;
-              document.getElementById('login-pwd').value = res.pwd;
-              attemptLogin(true);
+        // 3. ★★★ 關鍵分流邏輯 ★★★
+        if (liff.isInClient()) {
+           // ---> 情境 A: 在 LINE App 裡面 (LIFF) <---
+           // 強制只走「綁定驗證」，完全不看暫存
+           if (liffResult && liff.isLoggedIn()) {
+               updateLoading("正在驗證身分 (LIFF)...");
+               const profile = await liff.getProfile();
+               checkLineBinding(profile.userId);
            } else {
-              checkLocalStorage(); 
+               // 在 LINE 裡卻沒登入？罕見情況，直接秀登入頁
+               showLoginView();
            }
-        })
-        .catch(() => checkLocalStorage());
-      }
-
-      function checkLocalStorage() {
-        const savedAcc = localStorage.getItem('jci_acc');
-        const savedPwd = localStorage.getItem('jci_pwd');
-        if (savedAcc && savedPwd) {
-          document.getElementById('login-acc').value = savedAcc;
-          document.getElementById('login-pwd').value = savedPwd;
-          attemptLogin(true);
         } else {
-          showLoginView();
-        }
-      }
-
-      function attemptLogin(isAuto) {
-        const acc = document.getElementById('login-acc').value.trim().toUpperCase();
-        const pwd = document.getElementById('login-pwd').value.trim();
-        const errDiv = document.getElementById('login-error');
-
-        if (!acc || !pwd) {
-          if(!isAuto) errDiv.textContent = "請輸入帳號與密碼";
-          return;
+           // ---> 情境 B: 在一般瀏覽器 (網頁版) <---
+           // 維持便利性，優先檢查暫存
+           checkLocalStorage();
         }
 
-        const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
-
-        if (user) {
-          if (user.role && user.role.indexOf('前會員') !== -1) {
-             if(!isAuto) errDiv.textContent = "前會員無法登入";
-             return;
-          }
-
-          localStorage.setItem('jci_acc', acc);
-          localStorage.setItem('jci_pwd', pwd);
-
-          if (!isAuto) {
-            fetch(GAS_API_URL, { 
-               method: 'POST', 
-               body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) 
-            });
-          }
-          
-          showMainList();
-          renderList(membersData);
-
-        } else {
-          if(isAuto) {
-             showLoginView();
-          } else {
-             errDiv.textContent = "帳號或密碼錯誤";
-             document.getElementById('login-pwd').value = "";
-          }
-        }
+      } catch (e) {
+        alert("啟動錯誤：" + e);
+        showLoginView();
       }
+    };
 
-      function doLogout() {
-        if(confirm('確定要登出並清除紀錄嗎？')) {
-          localStorage.removeItem('jci_acc');
-          localStorage.removeItem('jci_pwd');
-          
-          if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-             liff.logout();
-          }
-          location.reload(); 
-        }
-      }
+    function initLiff() {
+      return new Promise(resolve => {
+         liff.init({ liffId: MY_LIFF_ID })
+           .then(() => resolve(true))
+           .catch(err => {
+             console.log("LIFF Init Error:", err);
+             resolve(false); 
+           });
+      });
+    }
 
-      // ==========================================
-      // ★ 介面切換與渲染
-      // ==========================================
-      function updateLoading(text) { document.getElementById('loading-text').textContent = text; }
-      
-      function showLoginView() {
-        document.getElementById('loading-mask').style.opacity = '0';
-        setTimeout(() => {
-           document.getElementById('loading-mask').style.display = 'none';
-           document.getElementById('login-view').style.display = 'flex';
-        }, 300);
-      }
+    function fetchMembers() {
+      updateLoading("下載最新的會員資料...");
+      return fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getMembers' })
+      }).then(res => res.json());
+    }
 
-      function showMainList() {
-        document.getElementById('loading-mask').style.display = 'none';
-        document.getElementById('login-view').style.display = 'none';
-        document.querySelector('.page-container').style.display = 'block';
-      }
-
-      function renderList(data) {
-        const container = document.getElementById("list-view");
-        if (data.length === 0) {
-          container.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">沒有符合的資料</div>';
-          return;
-        }
-        let html = "";
-        data.forEach(m => {
-          const originalIndex = membersData.indexOf(m);
-          const digits = (m.phone || "").replace(/[^0-9]/g, "");
-          const imgHtml = m.photoUrl 
-            ? `<img src="${m.photoUrl}" onerror="this.style.display='none'; this.parentNode.innerText='${m.initial}';">`
-            : m.initial;
-
-          html += `
-            <div class="member-card" onclick="openDetail(${originalIndex})">
-              <div class="card-left">
-                <div class="avatar-img">${imgHtml}</div>
-              </div>
-              <div class="card-right">
-                <div class="row-1">
-                  <div style="display:flex; align-items:baseline; gap:8px;">
-                    <span class="txt-name">${m.name}</span>
-                    ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
-                  </div>
-                  ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
-                </div>
-                ${ (m.badge || m.company) ? `
-                <div class="row-2">
-                  <div class="badge-honor" style="${m.badge?'':'display:none'}">${m.badge}</div>
-                  <div class="txt-company">${m.company}</div>
-                </div>` : '' }
-                <div class="row-3">
-                  <div class="txt-phone">${m.phone}</div>
-                  ${digits ? `<a class="btn-call" href="tel:${digits}" target="_parent" onclick="event.stopPropagation()">📞<span>撥打</span></a>` : ''}
-                </div>
-              </div>
-            </div>`;
-        });
-        container.innerHTML = html;
-      }
-
-      // ==========================================
-      // ★ 詳細頁邏輯 (含滑動返回)
-      // ==========================================
-      const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
-      const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
-
-      function openDetail(idx) {
-        const m = membersData[idx];
-        if(!m) return;
-        
-        const dv = document.getElementById("detail-view");
-        dv.style.display = "block";
-        dv.style.transform = (window.innerWidth <= 600) ? "translateX(0px)" : "translateX(-50%)";
-        document.body.classList.add('noscroll');
-
-        document.getElementById("dt-name").textContent = m.name;
-        document.getElementById("dt-role").textContent = m.role;
-        
-        const img = document.getElementById("hero-img");
-        const fb = document.getElementById("hero-fallback");
-        if (m.photoUrl) {
-           img.src = m.photoUrl; img.style.display = "block"; fb.style.display = "none";
-        } else {
-           img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex";
-        }
-        img.onerror = function(){ img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex"; };
-
-        document.getElementById("tag-badge").textContent = m.badge;
-        document.getElementById("tag-badge").style.display = m.badge ? "flex" : "none";
-        
-        document.getElementById("tag-yb").textContent = m.tag;
-        document.getElementById("tag-yb").style.display = m.tag ? "flex" : "none";
-
-        const digits = (m.colC || m.phone || "").replace(/[^0-9]/g, "");
-        const callBtn = document.getElementById("tag-call");
-        if(digits) { callBtn.href = "tel:" + digits; callBtn.style.display = "flex"; } else { callBtn.style.display = "none"; }
-
-        const fields = document.getElementById("dt-table");
-        fields.innerHTML = "";
-        detailCols.forEach(col => {
-           const key = colKeyMap[col];
-           if(m[key]) {
-              fields.innerHTML += `
-                <div class="dt-row">
-                  <div class="dt-label">${labelsData[col]||col}</div>
-                  <div class="dt-val">${m[key]}</div>
-                </div>`;
-           }
-        });
-      }
-
-      function backToList() {
-        document.getElementById("detail-view").style.display = "none";
-        document.body.classList.remove('noscroll');
-      }
-
-      let swipeStartX = 0;
-      let isSwiping = false;
-      document.addEventListener("touchstart", e => {
-         if(document.getElementById("detail-view").style.display === "block" && window.innerWidth <= 600 && e.touches[0].clientX < 60) {
-            swipeStartX = e.touches[0].clientX; isSwiping = true;
-            document.getElementById("detail-view").style.transition = "none";
-         }
-      }, {passive:true});
-
-      document.addEventListener("touchmove", e => {
-         if(!isSwiping) return;
-         const d = e.touches[0].clientX - swipeStartX;
-         if(d > 0) document.getElementById("detail-view").style.transform = `translateX(${d}px)`;
-      }, {passive:true});
-
-      document.addEventListener("touchend", e => {
-         if(!isSwiping) return;
-         isSwiping = false;
-         const d = (e.changedTouches[0].clientX) - swipeStartX;
-         const dv = document.getElementById("detail-view");
-         dv.style.transition = "transform 0.25s ease-out";
-         if (d > window.innerWidth * 0.4) {
-            dv.style.transform = `translateX(${window.innerWidth}px)`;
-            setTimeout(backToList, 250);
+    // ==========================================
+    // ★ 驗證邏輯 (LIFF 專用)
+    // ==========================================
+    function checkLineBinding(userId) {
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
+      })
+      .then(res => res.json())
+      .then(res => {
+         if(res.status === 'success') {
+            updateLoading("驗證成功，登入中...");
+            document.getElementById('login-acc').value = res.acc;
+            document.getElementById('login-pwd').value = res.pwd;
+            // 傳入 true 代表自動登入，但也傳入 isLiff=true 避免寫入暫存
+            attemptLogin(true, true);
          } else {
-            dv.style.transform = "translateX(0px)";
+            // ★★★ 驗證失敗：LIFF 用戶直接踢回登入頁，不讀取暫存 ★★★
+            alert("驗證失敗：您的 LINE ID 未綁定或是後端資料已刪除。");
+            showLoginView(); 
          }
-      }, {passive:true});
+      })
+      .catch((err) => {
+         alert("連線錯誤：" + err);
+         showLoginView();
+      });
+    }
 
-      // ==========================================
-      // ★ 排序與篩選
-      // ==========================================
-      function filterList() { filterAndSort(); }
+    // ==========================================
+    // ★ 本機暫存邏輯 (網頁版專用)
+    // ==========================================
+    function checkLocalStorage() {
+      const savedAcc = localStorage.getItem('jci_acc');
+      const savedPwd = localStorage.getItem('jci_pwd');
+      if (savedAcc && savedPwd) {
+        document.getElementById('login-acc').value = savedAcc;
+        document.getElementById('login-pwd').value = savedPwd;
+        attemptLogin(true, false); // false 代表這是網頁版，可以存
+      } else {
+        showLoginView();
+      }
+    }
 
-      function toggleCouncil() { setMode('COUNCIL', 'btn-council'); }
-      function togglePres()    { setMode('PRES', 'btn-pres'); }
-      function toggleChair()   { setMode('CHAIR', 'btn-chair'); }
-      function toggleDate()    { setMode('DATE', 'btn-date'); }
+    // ==========================================
+    // ★ 登入執行 (已修改存檔邏輯)
+    // ==========================================
+    function attemptLogin(isAuto, isLiffContext) {
+      const acc = document.getElementById('login-acc').value.trim().toUpperCase();
+      const pwd = document.getElementById('login-pwd').value.trim();
+      const errDiv = document.getElementById('login-error');
 
-      function setMode(mode, btnId) {
-        document.querySelectorAll('.btn-sort').forEach(b => {
-           b.classList.remove('active');
-           b.querySelector('span').textContent = '';
-        });
+      if (!acc || !pwd) {
+        if(!isAuto) errDiv.textContent = "請輸入帳號與密碼";
+        return;
+      }
+
+      const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
+
+      if (user) {
+        if (user.role && user.role.includes('前會員')) {
+           if(!isAuto) errDiv.textContent = "前會員無法登入";
+           return;
+        }
+
+        // ★★★ 關鍵修改：只有「非 LIFF」環境才寫入暫存 ★★★
+        // 如果是 LIFF，我們就不存了，保持手機乾淨
+        if (!liff.isInClient()) {
+            localStorage.setItem('jci_acc', acc);
+            localStorage.setItem('jci_pwd', pwd);
+        }
+
+        // 紀錄 Log (只有手動登入時才記，避免自動登入洗版，可依需求調整)
+        if (!isAuto) {
+          fetch(GAS_API_URL, { 
+             method: 'POST', 
+             body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) 
+          });
+        }
         
-        const btn = document.getElementById(btnId);
-        const span = btn.querySelector('span');
+        showMainList();
+        renderList(membersData);
 
-        if (mode === 'COUNCIL') {
-           if (activeMode === 'COUNCIL') sortOrder = 0; else sortOrder = 1;
+      } else {
+        if(isAuto) {
+           showLoginView();
         } else {
-           if (activeMode === mode) { sortOrder = (sortOrder+1)%3; } else { sortOrder = 1; }
+           errDiv.textContent = "帳號或密碼錯誤";
+           document.getElementById('login-pwd').value = "";
         }
+      }
+    }
 
-        if (sortOrder === 0) {
-           activeMode = 'ALL';
-           span.textContent = "";
-        } else {
-           activeMode = mode;
-           btn.classList.add('active');
-           if(mode !== 'COUNCIL') span.textContent = (sortOrder === 1) ? '↑' : '↓';
+    function doLogout() {
+      if(confirm('確定要登出嗎？')) {
+        // 清除暫存
+        localStorage.removeItem('jci_acc');
+        localStorage.removeItem('jci_pwd');
+        
+        if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+           liff.logout();
         }
-        filterAndSort();
+        location.reload(); 
+      }
+    }
+
+    // ==========================================
+    // ★ 介面切換與渲染
+    // ==========================================
+    function updateLoading(text) { document.getElementById('loading-text').textContent = text; }
+    
+    function showLoginView() {
+      document.getElementById('loading-mask').style.opacity = '0';
+      setTimeout(() => {
+         document.getElementById('loading-mask').style.display = 'none';
+         document.getElementById('login-view').style.display = 'flex';
+      }, 300);
+    }
+
+    function showMainList() {
+      document.getElementById('loading-mask').style.display = 'none';
+      document.getElementById('login-view').style.display = 'none';
+      document.querySelector('.page-container').style.display = 'block';
+    }
+
+    function renderList(data) {
+      const container = document.getElementById("list-view");
+      if (data.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">沒有符合的資料</div>';
+        return;
+      }
+      let html = "";
+      data.forEach(m => {
+        const originalIndex = membersData.indexOf(m);
+        const digits = (m.phone || "").replace(/[^0-9]/g, "");
+        const imgHtml = m.photoUrl 
+          ? `<img src="${m.photoUrl}" onerror="this.style.display='none'; this.parentNode.innerText='${m.initial}';">`
+          : m.initial;
+
+        html += `
+          <div class="member-card" onclick="openDetail(${originalIndex})">
+            <div class="card-left">
+              <div class="avatar-img">${imgHtml}</div>
+            </div>
+            <div class="card-right">
+              <div class="row-1">
+                <div style="display:flex; align-items:baseline; gap:8px;">
+                  <span class="txt-name">${m.name}</span>
+                  ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
+                </div>
+                ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
+              </div>
+              ${ (m.badge || m.company) ? `
+              <div class="row-2">
+                <div class="badge-honor" style="${m.badge?'':'display:none'}">${m.badge}</div>
+                <div class="txt-company">${m.company}</div>
+              </div>` : '' }
+              <div class="row-3">
+                <div class="txt-phone">${m.phone}</div>
+                ${digits ? `<a class="btn-call" href="tel:${digits}" target="_parent" onclick="event.stopPropagation()">📞<span>撥打</span></a>` : ''}
+              </div>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ==========================================
+    // ★ 詳細頁與滑動邏輯 (保留原樣)
+    // ==========================================
+    const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
+    const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
+
+    function openDetail(idx) {
+      const m = membersData[idx];
+      if(!m) return;
+      
+      const dv = document.getElementById("detail-view");
+      dv.style.display = "block";
+      dv.style.transform = (window.innerWidth <= 600) ? "translateX(0px)" : "translateX(-50%)";
+      document.body.classList.add('noscroll');
+
+      document.getElementById("dt-name").textContent = m.name;
+      document.getElementById("dt-role").textContent = m.role;
+      
+      const img = document.getElementById("hero-img");
+      const fb = document.getElementById("hero-fallback");
+      if (m.photoUrl) {
+         img.src = m.photoUrl; img.style.display = "block"; fb.style.display = "none";
+      } else {
+         img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex";
+      }
+      img.onerror = function(){ img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex"; };
+
+      document.getElementById("tag-badge").textContent = m.badge;
+      document.getElementById("tag-badge").style.display = m.badge ? "flex" : "none";
+      
+      document.getElementById("tag-yb").textContent = m.tag;
+      document.getElementById("tag-yb").style.display = m.tag ? "flex" : "none";
+
+      const digits = (m.colC || m.phone || "").replace(/[^0-9]/g, "");
+      const callBtn = document.getElementById("tag-call");
+      if(digits) { callBtn.href = "tel:" + digits; callBtn.style.display = "flex"; } else { callBtn.style.display = "none"; }
+
+      const fields = document.getElementById("dt-table");
+      fields.innerHTML = "";
+      detailCols.forEach(col => {
+         const key = colKeyMap[col];
+         if(m[key]) {
+            fields.innerHTML += `
+              <div class="dt-row">
+                <div class="dt-label">${labelsData[col]||col}</div>
+                <div class="dt-val">${m[key]}</div>
+              </div>`;
+         }
+      });
+    }
+
+    function backToList() {
+      document.getElementById("detail-view").style.display = "none";
+      document.body.classList.remove('noscroll');
+    }
+
+    let swipeStartX = 0;
+    let isSwiping = false;
+    document.addEventListener("touchstart", e => {
+       if(document.getElementById("detail-view").style.display === "block" && window.innerWidth <= 600 && e.touches[0].clientX < 60) {
+          swipeStartX = e.touches[0].clientX; isSwiping = true;
+          document.getElementById("detail-view").style.transition = "none";
+       }
+    }, {passive:true});
+
+    document.addEventListener("touchmove", e => {
+       if(!isSwiping) return;
+       const d = e.touches[0].clientX - swipeStartX;
+       if(d > 0) document.getElementById("detail-view").style.transform = `translateX(${d}px)`;
+    }, {passive:true});
+
+    document.addEventListener("touchend", e => {
+       if(!isSwiping) return;
+       isSwiping = false;
+       const d = (e.changedTouches[0].clientX) - swipeStartX;
+       const dv = document.getElementById("detail-view");
+       dv.style.transition = "transform 0.25s ease-out";
+       if (d > window.innerWidth * 0.4) {
+          dv.style.transform = `translateX(${window.innerWidth}px)`;
+          setTimeout(backToList, 250);
+       } else {
+          dv.style.transform = "translateX(0px)";
+       }
+    }, {passive:true});
+
+    // ==========================================
+    // ★ 排序與篩選
+    // ==========================================
+    function filterList() { filterAndSort(); }
+
+    function toggleCouncil() { setMode('COUNCIL', 'btn-council'); }
+    function togglePres()    { setMode('PRES', 'btn-pres'); }
+    function toggleChair()   { setMode('CHAIR', 'btn-chair'); }
+    function toggleDate()    { setMode('DATE', 'btn-date'); }
+
+    function setMode(mode, btnId) {
+      document.querySelectorAll('.btn-sort').forEach(b => {
+         b.classList.remove('active');
+         b.querySelector('span').textContent = '';
+      });
+      
+      const btn = document.getElementById(btnId);
+      const span = btn.querySelector('span');
+
+      if (mode === 'COUNCIL') {
+         if (activeMode === 'COUNCIL') sortOrder = 0; else sortOrder = 1;
+      } else {
+         if (activeMode === mode) { sortOrder = (sortOrder+1)%3; } else { sortOrder = 1; }
       }
 
-      function filterAndSort() {
-        const q = document.getElementById("search").value.trim().toLowerCase();
-        let filtered = membersData.filter(m => (m.name+m.badge+m.role+m.company+m.phone).toLowerCase().includes(q));
-
-        if (activeMode === 'COUNCIL') {
-           const keywords = ['會長', '副會長', '常務理事', '常務監事', '理事', '監事', '秘書長', '財務長', '法制顧問', '總幹事', 'OB主席', 'OB副主席', 'OB總幹事', '主委'];
-           filtered = filtered.filter(m => {
-              if(!m.role) return false;
-              return keywords.some(k => m.role.includes(k) && (k.startsWith('OB') || !m.role.includes('前'+k)));
-           });
-        } else if (activeMode === 'PRES') {
-           filtered = filtered.filter(m => m.badge && m.badge.includes('會長'));
-        } else if (activeMode === 'CHAIR') {
-           filtered = filtered.filter(m => m.badge && m.badge.includes('主席'));
-        }
-
-        if (sortOrder !== 0) {
-           filtered.sort((a, b) => {
-              let valA, valB;
-              if (activeMode === 'DATE') {
-                 valA = a.colM || ""; valB = b.colM || "";
-                 if (!valA && !valB) return 0; if(!valA) return 1; if(!valB) return -1;
-                 return (sortOrder === 1) ? valA.localeCompare(valB) : valB.localeCompare(valA);
-              } else if (activeMode === 'PRES' || activeMode === 'CHAIR') {
-                 const getNum = s => { const m = (s||"").match(/(\d+)/); return m ? parseInt(m[0],10) : 0; };
-                 return (sortOrder === 1) ? getNum(a.badge)-getNum(b.badge) : getNum(b.badge)-getNum(a.badge);
-              }
-              return 0;
-           });
-        }
-        renderList(filtered);
+      if (sortOrder === 0) {
+         activeMode = 'ALL';
+         span.textContent = "";
+      } else {
+         activeMode = mode;
+         btn.classList.add('active');
+         if(mode !== 'COUNCIL') span.textContent = (sortOrder === 1) ? '↑' : '↓';
       }
+      filterAndSort();
+    }
+
+    function filterAndSort() {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      let filtered = membersData.filter(m => (m.name+m.badge+m.role+m.company+m.phone).toLowerCase().includes(q));
+
+      if (activeMode === 'COUNCIL') {
+         const keywords = ['會長', '副會長', '常務理事', '常務監事', '理事', '監事', '秘書長', '財務長', '法制顧問', '總幹事', 'OB主席', 'OB副主席', 'OB總幹事', '主委'];
+         filtered = filtered.filter(m => {
+            if(!m.role) return false;
+            return keywords.some(k => m.role.includes(k) && (k.startsWith('OB') || !m.role.includes('前'+k)));
+         });
+      } else if (activeMode === 'PRES') {
+         filtered = filtered.filter(m => m.badge && m.badge.includes('會長'));
+      } else if (activeMode === 'CHAIR') {
+         filtered = filtered.filter(m => m.badge && m.badge.includes('主席'));
+      }
+
+      if (sortOrder !== 0) {
+         filtered.sort((a, b) => {
+            let valA, valB;
+            if (activeMode === 'DATE') {
+               valA = a.colM || ""; valB = b.colM || "";
+               if (!valA && !valB) return 0; if(!valA) return 1; if(!valB) return -1;
+               return (sortOrder === 1) ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else if (activeMode === 'PRES' || activeMode === 'CHAIR') {
+               const getNum = s => { const m = (s||"").match(/(\d+)/); return m ? parseInt(m[0],10) : 0; };
+               return (sortOrder === 1) ? getNum(a.badge)-getNum(b.badge) : getNum(b.badge)-getNum(a.badge);
+            }
+            return 0;
+         });
+      }
+      renderList(filtered);
+    }
     </script>
   </body>
 </html>
