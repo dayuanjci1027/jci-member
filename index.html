@@ -1,298 +1,628 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <title>會員通訊錄</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    /* CSS 樣式區 (與原本相同，略作壓縮) */
-    :root { --jci-blue: #0097D7; --jci-navy: #003C88; --bg-color: #f3f6f9; }
-    body { font-family: sans-serif; background: var(--bg-color); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #fff; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
-    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--jci-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    /* =========================================
+       0. 全域設定
+       ========================================= */
+    :root {
+      --jci-blue: #0097D7;
+      --jci-navy: #003C88;
+      --jci-green: #28a745;
+      --bg-color: #f3f6f9;
+      --text-dark: #1a1a1a;
+      --text-gray: #666666;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-color); margin: 0; padding: 0;
+      color: var(--text-dark); -webkit-tap-highlight-color: transparent;
+    }
+    body.noscroll { overflow: hidden; }
+
+    /* 讀取遮罩 */
+    #loading-mask {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+      background: #fff; z-index: 999999; display: flex; 
+      flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.3s;
+    }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--jci-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #loading-text { font-size: 14px; color: #666; font-weight: bold; }
+
+    /* =========================================
+       1. 登入介面
+       ========================================= */
+    #login-view {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+      background: #fff; z-index: 99999; flex-direction: column; align-items: center; justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .login-banner {
+      width: 100%; height: 260px;
+      background: linear-gradient(135deg, var(--jci-navy) 0%, var(--jci-blue) 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: white; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
+      margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,60,136,0.3);
+    }
+    .banner-icon { font-size: 50px; margin-bottom: 15px; background: rgba(255,255,255,0.2); width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .banner-title { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+    .banner-subtitle { font-size: 14px; opacity: 0.9; min-height: 20px; }
     
-    /* 登入與主頁面隱藏 */
-    #login-view, .page-container, #detail-view { display: none; }
+    .login-form { width: 85%; max-width: 360px; display: flex; flex-direction: column; gap: 16px; }
+    .input-label { font-size: 14px; color: var(--jci-navy); font-weight: 600; margin-bottom: 6px; display: block; }
+    .login-input { width: 100%; padding: 14px; font-size: 16px; border: 1px solid #e0e6ed; border-radius: 10px; box-sizing: border-box; outline: none; background: #f8faff; }
+    .login-input:focus { border-color: var(--jci-blue); background: #fff; }
+    .login-btn { margin-top: 10px; width: 100%; padding: 14px; font-size: 18px; font-weight: 600; color: white; background: var(--jci-navy); border: none; border-radius: 10px; cursor: pointer; }
+    .error-msg { color: #ff3b3b; font-size: 14px; text-align: center; font-weight: bold; margin-top: 5px; }
+
+    /* =========================================
+       2. 主列表介面
+       ========================================= */
+    .page-container { display: none; width: 100%; min-height: 100vh; }
+    .header-area {
+      background: white; padding: 0 0 16px;
+      border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; position: relative; 
+    }
+    .top-bar { background: var(--jci-navy); height: 12px; width: 100%; }
     
-    /* 以下為你原本的 CSS 樣式 (精簡版) */
-    .login-banner { height: 260px; background: linear-gradient(135deg, var(--jci-navy), var(--jci-blue)); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 0 0 30px 30px; }
-    .login-form { width: 85%; max-width: 360px; margin: 30px auto; display: flex; flex-direction: column; gap: 15px; }
-    .login-input { padding: 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; width: 100%; box-sizing: border-box; }
-    .login-btn { padding: 14px; background: var(--jci-navy); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; }
+    .btn-logout {
+      position: absolute; top: 20px; left: 15px;
+      font-size: 13px; color: #999; cursor: pointer;
+      padding: 4px 8px; border: 1px solid #eee; border-radius: 4px;
+    }
+
+    .org-name {
+      margin-top: 20px; text-align: center; font-size: 26px; font-weight: 800;
+      color: var(--jci-navy); letter-spacing: 1px; line-height: 1.2; margin-bottom: 8px;
+    }
+    .title-row { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; padding: 0 20px; }
+    .main-title { font-size: 22px; font-weight: 700; color: #333; }
+    .version-badge { position: absolute; right: 20px; font-size: 12px; color: white; background: var(--jci-blue); padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+    .credit-text { text-align: center; font-size: 12px; color: #888; margin-bottom: 16px; }
+
+    .search-wrapper { padding: 0 20px; max-width: 600px; margin: 0 auto; }
+    .search-input { width: 100%; padding: 12px 20px; font-size: 16px; border: 2px solid #e1e5eb; border-radius: 50px; box-sizing: border-box; outline: none; background: #fcfcfc; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--jci-blue); }
+
+    .sort-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 20px 0; max-width: 600px; margin: 0 auto; }
+    .btn-sort {
+      background: white; border: 1px solid var(--jci-blue); color: var(--jci-blue);
+      padding: 8px 4px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      cursor: pointer; transition: all 0.2s; text-align: center; white-space: nowrap; 
+    }
+    .btn-sort.active { background: var(--jci-blue); color: white; }
+
+    #list-view { padding: 0 16px 60px; max-width: 600px; margin: 0 auto; }
+
+    .member-card {
+      background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 14px;
+      border-left: 5px solid var(--jci-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex; gap: 16px; position: relative; transition: transform 0.1s;
+    }
+    .member-card:active { transform: scale(0.98); }
     
-    .header-area { background: white; padding-bottom: 15px; border-radius: 0 0 24px 24px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .org-name { font-size: 24px; font-weight: 800; color: var(--jci-navy); padding-top: 20px; }
-    .member-card { background: #fff; margin: 10px 16px; padding: 16px; border-radius: 16px; border-left: 5px solid var(--jci-blue); box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
+    .card-left { flex-shrink: 0; padding-top: 4px; }
+    .avatar-img {
+      width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+      background: #e1f0ff; display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: bold; color: var(--jci-navy);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .avatar-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .row-1 { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+    .txt-name { font-size: 22px; font-weight: 800; color: #222; }
+    .txt-role { font-size: 14px; color: #666; font-weight: normal; background: #f0f2f5; padding: 2px 6px; border-radius: 4px; }
+    .tag-yb { font-size: 13px; color: var(--jci-blue); border: 1px solid #b3e5fc; background: #e1f5fe; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500; margin-left: auto; }
+    .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .badge-honor { background: var(--jci-navy); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+    .txt-company { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: right; }
+    .row-3 { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid #f0f4f8; }
+    .txt-phone { font-size: 16px; color: #444; font-weight: 500; letter-spacing: 0.5px; }
+    .btn-call { background: var(--jci-blue); color: white; padding: 6px 16px; border-radius: 50px; font-size: 14px; font-weight: 500; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0, 151, 215, 0.3); cursor: pointer; text-decoration: none; }
+    .btn-call span { margin-left: 4px; }
+
+    /* =========================================
+       3. 詳細頁 (Detail View)
+       ========================================= */
+    #detail-view {
+      display: none; position: fixed; inset: 0; z-index: 100; background: #fff;
+      max-width: 600px; left: 50%; transform: translateX(-50%);
+      box-shadow: 0 0 30px rgba(0,0,0,0.1);
+    }
+    @media (max-width: 600px) { #detail-view { left: 0; transform: translateX(0); max-width: 100%; } }
+
+    .float-back-btn {
+      position: absolute; top: 20px; left: 20px; width: 44px; height: 44px;
+      background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 24px; font-weight: bold; text-decoration: none; z-index: 999;
+      backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .detail-scroll-container { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #fff; }
+    .hero-image-area {
+      width: 100%; height: auto; min-height: 250px; background: linear-gradient(to bottom, #f0f4f8, #fff);
+      display: flex; align-items: center; justify-content: center;
+      border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; position: relative; z-index: 1;
+      padding: 40px 0 20px 0;
+    }
+    .hero-image { position: static; width: 85%; max-width: 320px; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 4px solid white; }
+    .hero-fallback { position: static; width: 85%; max-width: 320px; aspect-ratio: 1 / 1; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 80px; font-weight: bold; color: #fff; background: #ccc; border: 4px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+    .detail-content { padding: 10px 20px 60px; }
+    .dt-header { text-align: center; margin-bottom: 20px; }
+    .dt-name { font-size: 32px; font-weight: 800; color: var(--jci-navy); margin-bottom: 6px; }
+    .dt-role { font-size: 18px; color: var(--text-gray); font-weight: 500; }
+    .dt-tags { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+    .tag-pill { padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; display: flex; align-items: center; }
+    .pill-navy { background: var(--jci-navy); color: white; }
+    .pill-blue { background: #e1f5fe; color: var(--jci-blue); border: 1px solid #b3e5fc; }
+    .pill-green { background: var(--jci-green); color: white; text-decoration: none; box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3); }
     
-    #detail-view { position: fixed; inset: 0; background: #fff; z-index: 100; overflow-y: auto; }
-    .float-back-btn { position: fixed; top: 20px; left: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 20px; }
-    .dt-row { border-bottom: 1px solid #eee; padding: 12px 0; }
-    .dt-label { font-size: 12px; color: #888; }
-    .dt-val { font-size: 16px; color: #333; font-weight: 500; }
+    .dt-table { background: #f8faff; border-radius: 16px; padding: 10px 20px; }
+    .dt-row { display: flex; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid #eef2f5; font-size: 16px; line-height: 1.6; }
+    .dt-row:last-child { border-bottom: none; }
+    .dt-label { width: 68px; text-align: justify; text-align-last: justify; color: #888; font-weight: 500; flex-shrink: 0; margin-right: 20px; }
+    .dt-val { flex: 1; color: #333; font-weight: 500; word-break: break-all; }
   </style>
 </head>
 <body>
 
   <div id="loading-mask">
     <div class="spinner"></div>
-    <div id="loading-text">正在連接資料庫...</div>
+    <div id="loading-text">資料載入中...</div>
   </div>
 
   <div id="login-view">
     <div class="login-banner">
-      <div style="font-size:40px; margin-bottom:10px;">🔒</div>
-      <div style="font-size:24px; font-weight:bold;">會員通訊錄</div>
-      <div id="banner-msg" style="font-size:14px; opacity:0.9; margin-top:5px;">請輸入身分證字號與出生年月日</div>
+      <div class="banner-icon">🔒</div>
+      <div class="banner-title">會員通訊錄</div>
+      <div class="banner-subtitle">請輸入身分證字號與出生年月日</div>
     </div>
     <div class="login-form">
-      <input type="text" id="login-acc" class="login-input" placeholder="身分證字號 (帳號)" style="text-transform:uppercase;">
-      <input type="password" id="login-pwd" class="login-input" placeholder="生日 (例如: 19900101)">
-      <div id="login-error" style="color:red; text-align:center; font-size:14px;"></div>
-      <button class="login-btn" onclick="attemptLogin()">登入</button>
+      <label class="input-label">身分證字號 (帳號)</label>
+      <input type="text" id="login-acc" class="login-input" placeholder="例如：A123456789" oninput="this.value = this.value.toUpperCase()" style="text-transform:uppercase;">
+      <label class="input-label">西元出生年月日 (密碼)</label>
+      <input type="password" id="login-pwd" class="login-input" placeholder="西元8碼 例如：19900101">
+      <div id="login-error" class="error-msg"></div>
+      <button class="login-btn" onclick="attemptLogin()">登入查詢</button>
     </div>
   </div>
 
   <div class="page-container">
     <div class="header-area">
+      <div class="top-bar"></div>
+      <div class="btn-logout" onclick="doLogout()">登出</div>
       <div class="org-name">大園國際青年商會</div>
-      <div style="font-size:12px; color:#888; margin-top:5px;">Github V4.0 極速版</div>
-      <div style="padding: 15px 20px 0;">
-        <input id="search" class="login-input" style="border-radius:50px;" placeholder="搜尋 姓名 / 電話 / 公司..." onkeyup="filterList()">
+      <div class="title-row">
+        <div class="main-title">會員通訊錄</div>
+        <div class="version-badge">GitHub V5.0</div>
       </div>
-      <button onclick="doLogout()" style="margin-top:10px; background:none; border:none; color:#999; text-decoration:underline;">登出</button>
-    </div>
-    <div id="list-view" style="padding-bottom:60px;"></div>
-  </div>
+      <div class="credit-text">GitHub 極速架構版</div>
 
-  <div id="detail-view">
-    <a href="javascript:void(0)" class="float-back-btn" onclick="backToList()">←</a>
-    <div style="padding: 60px 20px;">
-      <div style="text-align:center;">
-        <img id="dt-img" style="width:100px; height:100px; border-radius:50%; background:#eee; object-fit:cover;">
-        <h2 id="dt-name" style="margin:10px 0 5px; color:#003C88;"></h2>
-        <div id="dt-role" style="color:#666;"></div>
+      <div class="search-wrapper">
+        <input id="search" class="search-input" type="text" onkeyup="filterList()" placeholder="搜尋 姓名 / 公司 / 電話">
       </div>
-      <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-      <div id="dt-table"></div>
+
+      <div class="sort-wrapper">
+        <div id="btn-council" class="btn-sort" onclick="toggleCouncil()">會務人員<span></span></div>
+        <div id="btn-pres" class="btn-sort" onclick="togglePres()">歷屆前會長<span></span></div>
+        <div id="btn-chair" class="btn-sort" onclick="toggleChair()">歷屆前主席<span></span></div>
+        <div id="btn-date" class="btn-sort" onclick="toggleDate()">入會日排序<span></span></div>
+      </div>
     </div>
-  </div>
 
-<script>
-  // ==========================================
-  // ★★★ 設定區 (請填入你的資訊) ★★★
-  // ==========================================
-  const LIFF_ID = "2008793289-PIQx5rgr";
-  
-  // ★★★ 請將這裡換成你剛剛部署產生的 GAS 網址 ★★★
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
+    <div id="list-view"></div>
 
-  // 全域變數
-  let membersData = [];
-  let labelsData = {};
-  
-  // 程式入口
-  window.onload = async function() {
-    try {
-      // 1. 平行處理：同時初始化 LIFF 和 下載會員資料
-      const [liffOk, apiRes] = await Promise.all([
-        initLiff(),
-        fetchMembers()
-      ]);
-
-      // 2. 資料處理
-      if(apiRes.status === 'success') {
-         membersData = apiRes.members;
-         labelsData = apiRes.labels;
-      } else {
-         alert("資料載入失敗: " + apiRes.message);
-      }
-
-      // 3. 身分驗證處理
-      if (liffOk && liff.isLoggedIn()) {
-         updateLoading("驗證身分中...");
-         const profile = await liff.getProfile();
-         checkBinding(profile.userId);
-      } else {
-         // 沒登入 LIFF，檢查是否有本機暫存
-         checkLocalStorage();
-      }
-
-    } catch (err) {
-      alert("系統啟動錯誤：" + err);
-      showLogin(); // 發生錯誤還是讓使用者嘗試手動登入
-    }
-  };
-
-  // --- 核心功能 ---
-
-  function initLiff() {
-    return new Promise((resolve) => {
-      liff.init({ liffId: LIFF_ID })
-        .then(() => resolve(true))
-        .catch(err => {
-          console.error("LIFF Init Error", err);
-          resolve(false); // 失敗也讓程式繼續跑，只是不能自動登入
-        });
-    });
-  }
-
-  function fetchMembers() {
-    updateLoading("下載最新的會員資料...");
-    return fetch(GAS_API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'getMembers' })
-    }).then(res => res.json());
-  }
-
-  function checkBinding(userId) {
-    fetch(GAS_API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
-    })
-    .then(res => res.json())
-    .then(res => {
-      if (res.status === 'success') {
-         document.getElementById('login-acc').value = res.acc;
-         document.getElementById('login-pwd').value = res.pwd;
-         attemptLogin(true);
-      } else {
-         checkLocalStorage(); // 驗證失敗切回手動
-      }
-    });
-  }
-
-  function attemptLogin(isAuto) {
-    const acc = document.getElementById('login-acc').value.trim().toUpperCase();
-    const pwd = document.getElementById('login-pwd').value.trim();
-    const errDiv = document.getElementById('login-error');
-
-    if (!acc || !pwd) {
-      if(!isAuto) errDiv.innerText = "請輸入帳號密碼";
-      return;
-    }
-
-    const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
-
-    if (user) {
-      if (user.role && user.role.includes('前會員')) {
-         if(!isAuto) errDiv.innerText = "前會員無法登入";
-         return;
-      }
-      
-      // 登入成功
-      localStorage.setItem('jci_acc', acc);
-      localStorage.setItem('jci_pwd', pwd);
-      
-      // 紀錄 Log (不等待)
-      if (!isAuto) {
-        fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) });
-      }
-
-      showList();
-    } else {
-      if(isAuto) {
-         showLogin(); // 自動登入失敗，顯示登入頁
-      } else {
-         errDiv.innerText = "帳號或密碼錯誤";
-      }
-    }
-  }
-
-  // --- UI 切換與輔助 ---
-
-  function updateLoading(text) {
-    document.getElementById('loading-text').innerText = text;
-  }
-
-  function showLogin() {
-    document.getElementById('loading-mask').style.opacity = '0';
-    setTimeout(() => {
-       document.getElementById('loading-mask').style.display = 'none';
-       document.getElementById('login-view').style.display = 'flex';
-    }, 500);
-  }
-
-  function showList() {
-    document.getElementById('loading-mask').style.display = 'none';
-    document.getElementById('login-view').style.display = 'none';
-    document.querySelector('.page-container').style.display = 'block';
-    renderList(membersData);
-  }
-
-  function checkLocalStorage() {
-    const acc = localStorage.getItem('jci_acc');
-    const pwd = localStorage.getItem('jci_pwd');
-    if (acc && pwd) {
-      document.getElementById('login-acc').value = acc;
-      document.getElementById('login-pwd').value = pwd;
-      attemptLogin(true);
-    } else {
-      showLogin();
-    }
-  }
-  
-  function doLogout() {
-     if(confirm("確定登出?")) {
-        localStorage.clear();
-        if(liff.isLoggedIn()) liff.logout();
-        location.reload();
-     }
-  }
-
-  // --- 渲染列表 ---
-  function renderList(data) {
-    const div = document.getElementById('list-view');
-    let html = "";
-    data.forEach((m, idx) => {
-      // 找出原始 index (為了簡單這裡直接傳遞物件參考更好，但維持你習慣的 openDetail)
-      const realIdx = membersData.indexOf(m); 
-      html += `
-        <div class="member-card" onclick="openDetail(${realIdx})">
-          <div style="font-size:18px; font-weight:bold;">${m.name} <span style="font-size:12px; font-weight:normal; background:#eee; padding:2px 5px; border-radius:4px;">${m.role||""}</span></div>
-          <div style="color:#666; font-size:14px; margin-top:5px;">${m.company||""}</div>
-          <div style="color:#0097D7; font-weight:bold; margin-top:8px;">${m.phone||""}</div>
+    <div id="detail-view">
+      <a href="javascript:void(0)" class="float-back-btn" onclick="backToList()">←</a>
+      <div class="detail-scroll-container">
+        <div class="hero-image-area">
+          <img id="hero-img" class="hero-image" alt="photo">
+          <div id="hero-fallback" class="hero-fallback"></div>
         </div>
-      `;
-    });
-    if(data.length===0) html="<div style='text-align:center; padding:20px; color:#999;'>查無資料</div>";
-    div.innerHTML = html;
-  }
+        <div class="detail-content">
+          <div class="dt-header">
+            <div id="dt-name" class="dt-name"></div>
+            <div id="dt-role" class="dt-role"></div>
+          </div>
+          <div class="dt-tags">
+            <div id="tag-badge" class="tag-pill pill-navy"></div>
+            <div id="tag-yb" class="tag-pill pill-blue"></div>
+            <a id="tag-call" href="#" class="tag-pill pill-green" target="_parent">📞<span>撥打</span></a>
+          </div>
+          <div id="dt-table" class="dt-table"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  function filterList() {
-    const q = document.getElementById('search').value.toLowerCase();
-    const res = membersData.filter(m => (m.name+m.phone+m.company).toLowerCase().includes(q));
-    renderList(res);
-  }
+  <script>
+    // ==========================================
+    // ★ 設定區
+    // ==========================================
+    const MY_LIFF_ID = "2008793289-PIQx5rgr";
+    
+    // ★★★ 務必修改為剛剛部署的 GAS 網址 ★★★
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
 
-  function openDetail(idx) {
-    const m = membersData[idx];
-    document.getElementById('dt-name').innerText = m.name;
-    document.getElementById('dt-role').innerText = m.role;
-    document.getElementById('dt-img').src = m.photoUrl || "";
-    document.getElementById('dt-img').onerror = function(){this.style.display='none'};
-    
-    let html = "";
-    const cols = ["C","F","G","H","I","J","K","L","M","N"];
-    const keyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
-    
-    cols.forEach(c => {
-       if(m[keyMap[c]]) {
-         html += `<div class="dt-row"><div class="dt-label">${labelsData[c]||c}</div><div class="dt-val">${m[keyMap[c]]}</div></div>`;
-       }
-    });
-    // 電話按鈕
-    if(m.phone) {
-       html += `<div style="margin-top:20px; text-align:center;"><a href="tel:${m.phone}" style="background:#28a745; color:white; padding:10px 40px; border-radius:50px; text-decoration:none; font-weight:bold;">📞 撥打電話</a></div>`;
+    // 全域變數
+    let membersData = [];
+    let labelsData = {};
+    let activeMode = 'ALL';
+    let sortOrder = 0;
+
+    // ==========================================
+    // ★ 系統啟動
+    // ==========================================
+    window.onload = async function() {
+      try {
+        // 同步執行 LIFF 初始化 & 下載資料
+        const [liffResult, apiResult] = await Promise.all([
+          initLiff(),
+          fetchMembers()
+        ]);
+
+        // 資料處理
+        if(apiResult.status === 'success') {
+           membersData = apiResult.members;
+           labelsData = apiResult.labels;
+        } else {
+           alert("資料載入失敗: " + apiResult.message);
+        }
+
+        // 身分驗證
+        if (liffResult && liff.isLoggedIn()) {
+           updateLoading("正在驗證身分...");
+           const profile = await liff.getProfile();
+           checkLineBinding(profile.userId);
+        } else {
+           // 沒登入 LIFF (或非 LINE 環境)，檢查本地紀錄
+           checkLocalStorage();
+        }
+
+      } catch (e) {
+        alert("系統啟動錯誤：" + e);
+        showLoginView(); // 錯誤就秀登入頁讓使用者試試
+      }
+    };
+
+    function initLiff() {
+      return new Promise(resolve => {
+         liff.init({ liffId: MY_LIFF_ID })
+           .then(() => resolve(true))
+           .catch(err => {
+             console.log("LIFF Init Error:", err);
+             resolve(false); // 失敗也回傳 false 讓程式繼續
+           });
+      });
     }
 
-    document.getElementById('dt-table').innerHTML = html;
-    document.getElementById('detail-view').style.display = 'block';
-  }
+    function fetchMembers() {
+      updateLoading("下載最新的會員資料...");
+      return fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getMembers' })
+      }).then(res => res.json());
+    }
 
-  function backToList() { document.getElementById('detail-view').style.display = 'none'; }
-</script>
+    // ==========================================
+    // ★ 驗證與登入邏輯
+    // ==========================================
+    function checkLineBinding(userId) {
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
+      })
+      .then(res => res.json())
+      .then(res => {
+         if(res.status === 'success') {
+            updateLoading("驗證成功，登入中...");
+            document.getElementById('login-acc').value = res.acc;
+            document.getElementById('login-pwd').value = res.pwd;
+            attemptLogin(true);
+         } else {
+            // 驗證失敗 (可能是沒綁定)，切回登入頁
+            checkLocalStorage(); 
+         }
+      })
+      .catch(() => checkLocalStorage());
+    }
+
+    function checkLocalStorage() {
+      const savedAcc = localStorage.getItem('jci_acc');
+      const savedPwd = localStorage.getItem('jci_pwd');
+      if (savedAcc && savedPwd) {
+        document.getElementById('login-acc').value = savedAcc;
+        document.getElementById('login-pwd').value = savedPwd;
+        attemptLogin(true);
+      } else {
+        showLoginView();
+      }
+    }
+
+    function attemptLogin(isAuto) {
+      const acc = document.getElementById('login-acc').value.trim().toUpperCase();
+      const pwd = document.getElementById('login-pwd').value.trim();
+      const errDiv = document.getElementById('login-error');
+
+      if (!acc || !pwd) {
+        if(!isAuto) errDiv.textContent = "請輸入帳號與密碼";
+        return;
+      }
+
+      const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
+
+      if (user) {
+        if (user.role && user.role.includes('前會員')) {
+           if(!isAuto) errDiv.textContent = "前會員無法登入";
+           return;
+        }
+
+        // 登入成功
+        localStorage.setItem('jci_acc', acc);
+        localStorage.setItem('jci_pwd', pwd);
+
+        if (!isAuto) {
+          fetch(GAS_API_URL, { 
+             method: 'POST', 
+             body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) 
+          });
+        }
+        
+        showMainList();
+        renderList(membersData);
+
+      } else {
+        if(isAuto) {
+           showLoginView(); // 自動登入失敗才顯示登入頁
+        } else {
+           errDiv.textContent = "帳號或密碼錯誤";
+           document.getElementById('login-pwd').value = "";
+        }
+      }
+    }
+
+    function doLogout() {
+      if(confirm('確定要登出並清除紀錄嗎？')) {
+        localStorage.removeItem('jci_acc');
+        localStorage.removeItem('jci_pwd');
+        
+        if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+           liff.logout();
+        }
+        
+        // 重新整理頁面，因為 localStorage 空了，會自動停在登入頁
+        location.reload(); 
+      }
+    }
+
+    // ==========================================
+    // ★ 介面切換與渲染
+    // ==========================================
+    function updateLoading(text) { document.getElementById('loading-text').textContent = text; }
+    
+    function showLoginView() {
+      document.getElementById('loading-mask').style.opacity = '0';
+      setTimeout(() => {
+         document.getElementById('loading-mask').style.display = 'none';
+         document.getElementById('login-view').style.display = 'flex';
+      }, 300);
+    }
+
+    function showMainList() {
+      document.getElementById('loading-mask').style.display = 'none';
+      document.getElementById('login-view').style.display = 'none';
+      document.querySelector('.page-container').style.display = 'block';
+    }
+
+    function renderList(data) {
+      const container = document.getElementById("list-view");
+      if (data.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">沒有符合的資料</div>';
+        return;
+      }
+      let html = "";
+      data.forEach(m => {
+        const originalIndex = membersData.indexOf(m);
+        const digits = (m.phone || "").replace(/[^0-9]/g, "");
+        
+        // 圖片處理
+        const imgHtml = m.photoUrl 
+          ? `<img src="${m.photoUrl}" onerror="this.style.display='none'; this.parentNode.innerText='${m.initial}';">`
+          : m.initial;
+
+        html += `
+          <div class="member-card" onclick="openDetail(${originalIndex})">
+            <div class="card-left">
+              <div class="avatar-img">${imgHtml}</div>
+            </div>
+            <div class="card-right">
+              <div class="row-1">
+                <div style="display:flex; align-items:baseline; gap:8px;">
+                  <span class="txt-name">${m.name}</span>
+                  ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
+                </div>
+                ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
+              </div>
+              ${ (m.badge || m.company) ? `
+              <div class="row-2">
+                <div class="badge-honor" style="${m.badge?'':'display:none'}">${m.badge}</div>
+                <div class="txt-company">${m.company}</div>
+              </div>` : '' }
+              <div class="row-3">
+                <div class="txt-phone">${m.phone}</div>
+                ${digits ? `<a class="btn-call" href="tel:${digits}" target="_parent" onclick="event.stopPropagation()">📞<span>撥打</span></a>` : ''}
+              </div>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ==========================================
+    // ★ 詳細頁邏輯 (含滑動返回)
+    // ==========================================
+    const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
+    const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
+
+    function openDetail(idx) {
+      const m = membersData[idx];
+      if(!m) return;
+      
+      const dv = document.getElementById("detail-view");
+      dv.style.display = "block";
+      dv.style.transform = (window.innerWidth <= 600) ? "translateX(0px)" : "translateX(-50%)";
+      document.body.classList.add('noscroll');
+
+      // 填入資料
+      document.getElementById("dt-name").textContent = m.name;
+      document.getElementById("dt-role").textContent = m.role;
+      
+      const img = document.getElementById("hero-img");
+      const fb = document.getElementById("hero-fallback");
+      if (m.photoUrl) {
+         img.src = m.photoUrl; img.style.display = "block"; fb.style.display = "none";
+      } else {
+         img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex";
+      }
+      img.onerror = function(){ img.style.display = "none"; fb.textContent = m.initial; fb.style.display = "flex"; };
+
+      document.getElementById("tag-badge").textContent = m.badge;
+      document.getElementById("tag-badge").style.display = m.badge ? "flex" : "none";
+      
+      document.getElementById("tag-yb").textContent = m.tag;
+      document.getElementById("tag-yb").style.display = m.tag ? "flex" : "none";
+
+      const digits = (m.colC || m.phone || "").replace(/[^0-9]/g, "");
+      const callBtn = document.getElementById("tag-call");
+      if(digits) { callBtn.href = "tel:" + digits; callBtn.style.display = "flex"; } else { callBtn.style.display = "none"; }
+
+      const fields = document.getElementById("dt-table");
+      fields.innerHTML = "";
+      detailCols.forEach(col => {
+         const key = colKeyMap[col];
+         if(m[key]) {
+            fields.innerHTML += `
+              <div class="dt-row">
+                <div class="dt-label">${labelsData[col]||col}</div>
+                <div class="dt-val">${m[key]}</div>
+              </div>`;
+         }
+      });
+    }
+
+    function backToList() {
+      document.getElementById("detail-view").style.display = "none";
+      document.body.classList.remove('noscroll');
+    }
+
+    // 滑動返回邏輯
+    let swipeStartX = 0;
+    let isSwiping = false;
+    document.addEventListener("touchstart", e => {
+       if(document.getElementById("detail-view").style.display === "block" && window.innerWidth <= 600 && e.touches[0].clientX < 60) {
+          swipeStartX = e.touches[0].clientX; isSwiping = true;
+          document.getElementById("detail-view").style.transition = "none";
+       }
+    }, {passive:true});
+
+    document.addEventListener("touchmove", e => {
+       if(!isSwiping) return;
+       const d = e.touches[0].clientX - swipeStartX;
+       if(d > 0) document.getElementById("detail-view").style.transform = `translateX(${d}px)`;
+    }, {passive:true});
+
+    document.addEventListener("touchend", e => {
+       if(!isSwiping) return;
+       isSwiping = false;
+       const d = (e.changedTouches[0].clientX) - swipeStartX;
+       const dv = document.getElementById("detail-view");
+       dv.style.transition = "transform 0.25s ease-out";
+       if (d > window.innerWidth * 0.4) {
+          dv.style.transform = `translateX(${window.innerWidth}px)`;
+          setTimeout(backToList, 250);
+       } else {
+          dv.style.transform = "translateX(0px)";
+       }
+    }, {passive:true});
+
+    // ==========================================
+    // ★ 排序與篩選
+    // ==========================================
+    function filterList() { filterAndSort(); }
+
+    function toggleCouncil() { setMode('COUNCIL', 'btn-council'); }
+    function togglePres()    { setMode('PRES', 'btn-pres'); }
+    function toggleChair()   { setMode('CHAIR', 'btn-chair'); }
+    function toggleDate()    { setMode('DATE', 'btn-date'); }
+
+    function setMode(mode, btnId) {
+      document.querySelectorAll('.btn-sort').forEach(b => {
+         b.classList.remove('active');
+         b.querySelector('span').textContent = '';
+      });
+      
+      const btn = document.getElementById(btnId);
+      const span = btn.querySelector('span');
+
+      if (mode === 'COUNCIL') {
+         if (activeMode === 'COUNCIL') sortOrder = 0; else sortOrder = 1;
+      } else {
+         if (activeMode === mode) { sortOrder = (sortOrder+1)%3; } else { sortOrder = 1; }
+      }
+
+      if (sortOrder === 0) {
+         activeMode = 'ALL';
+         span.textContent = "";
+      } else {
+         activeMode = mode;
+         btn.classList.add('active');
+         if(mode !== 'COUNCIL') span.textContent = (sortOrder === 1) ? '↑' : '↓';
+      }
+      filterAndSort();
+    }
+
+    function filterAndSort() {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      let filtered = membersData.filter(m => (m.name+m.badge+m.role+m.company+m.phone).toLowerCase().includes(q));
+
+      if (activeMode === 'COUNCIL') {
+         const keywords = ['會長', '副會長', '常務理事', '常務監事', '理事', '監事', '秘書長', '財務長', '法制顧問', '總幹事', 'OB主席', 'OB副主席', 'OB總幹事', '主委'];
+         filtered = filtered.filter(m => {
+            if(!m.role) return false;
+            return keywords.some(k => m.role.includes(k) && (k.startsWith('OB') || !m.role.includes('前'+k)));
+         });
+      } else if (activeMode === 'PRES') {
+         filtered = filtered.filter(m => m.badge && m.badge.includes('會長'));
+      } else if (activeMode === 'CHAIR') {
+         filtered = filtered.filter(m => m.badge && m.badge.includes('主席'));
+      }
+
+      if (sortOrder !== 0) {
+         filtered.sort((a, b) => {
+            let valA, valB;
+            if (activeMode === 'DATE') {
+               valA = a.colM || ""; valB = b.colM || "";
+               if (!valA && !valB) return 0; if(!valA) return 1; if(!valB) return -1;
+               return (sortOrder === 1) ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else if (activeMode === 'PRES' || activeMode === 'CHAIR') {
+               const getNum = s => { const m = (s||"").match(/(\d+)/); return m ? parseInt(m[0],10) : 0; };
+               return (sortOrder === 1) ? getNum(a.badge)-getNum(b.badge) : getNum(b.badge)-getNum(a.badge);
+            }
+            return 0;
+         });
+      }
+      renderList(filtered);
+    }
+  </script>
 </body>
 </html>
