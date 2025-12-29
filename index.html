@@ -134,38 +134,42 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* ★★★ 修正名字錯位問題的關鍵 CSS ★★★ */
-    .row-1 { 
+    /* ★★★ 版面結構修正 CSS ★★★ */
+    /* 名字與 YB 標籤放在同一排，確保置頂對齊 */
+    .row-top { 
         display: flex; 
-        align-items: center; /* 讓名字和職稱垂直置中 */
-        gap: 8px; 
-        margin-bottom: 6px; 
-        overflow: hidden; /* 防止撐爆 */
+        justify-content: space-between; 
+        align-items: center;
+        margin-bottom: 4px; 
     }
     .txt-name { 
         font-size: 22px; 
         font-weight: 800; 
         color: #222; 
-        white-space: nowrap; /* ★★★ 絕對不換行 ★★★ */
-        flex-shrink: 0;      /* ★★★ 絕對不縮小 ★★★ */
+        white-space: nowrap; 
+    }
+    /* YB 標籤樣式 */
+    .tag-yb { 
+        font-size: 13px; color: var(--jci-blue); 
+        border: 1px solid #b3e5fc; background: #e1f5fe; 
+        padding: 2px 8px; border-radius: 4px; 
+        flex-shrink: 0; font-weight: 500;
+    }
+    /* 職稱獨立一排 */
+    .row-role {
+        margin-bottom: 8px;
+        display: flex;
     }
     .txt-role { 
         font-size: 14px; 
         color: #666; 
         font-weight: normal; 
         background: #f0f2f5; 
-        padding: 2px 6px; 
+        padding: 3px 8px; 
         border-radius: 4px; 
-        /* 讓職稱太長時可以自己適應，不要擠名字 */
-        flex: 1; 
-        min-width: 0; 
-        white-space: nowrap; 
-        overflow: hidden; 
-        text-overflow: ellipsis; 
+        line-height: 1.4;
     }
-    /* ★★★ 修正結束 ★★★ */
 
-    .tag-yb { font-size: 13px; color: var(--jci-blue); border: 1px solid #b3e5fc; background: #e1f5fe; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500; margin-left: auto; }
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge-honor { background: var(--jci-navy); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
     .txt-company { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: right; }
@@ -257,7 +261,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.3</div>
+        <div class="version-badge">v5.4</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -360,10 +364,10 @@
       });
     }
 
-    // ★★★ 關鍵函式：強制喚起 LINE App (透過 LIFF URL) ★★★
+    // ★★★ 修正喚起 App 的指令：改用 line.me/R/app/... ★★★
     function openLineApp() {
-        // 直接跳轉到 LIFF 連結，手機會偵測並打開 LINE App
-        window.location.href = "https://liff.line.me/" + MY_LIFF_ID;
+        // 這個指令在 iOS 和 Android 上是強制喚起 LINE App 並打開 LIFF 的標準做法
+        window.location.href = "https://line.me/R/app/" + MY_LIFF_ID;
     }
 
     function fetchMembers() {
@@ -486,6 +490,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
+    // ★★★ 重新設計的卡片渲染 (名字與YB在上，職稱在下) ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -506,13 +511,14 @@
               <div class="avatar-img">${imgHtml}</div>
             </div>
             <div class="card-right">
-              <div class="row-1">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span class="txt-name">${m.name}</span>
-                  ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
-                </div>
+              
+              <div class="row-top">
+                <span class="txt-name">${m.name}</span>
                 ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
               </div>
+
+              ${m.role ? `<div class="row-role"><span class="txt-role">${m.role}</span></div>` : ''}
+
               ${ (m.badge || m.company) ? `
               <div class="row-2">
                 <div class="badge-honor" style="${m.badge?'':'display:none'}">${m.badge}</div>
