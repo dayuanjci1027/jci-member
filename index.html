@@ -134,28 +134,20 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* ★★★ 版面結構修正：名字不動，職稱可換行，YB靠右 ★★★ */
+    /* ★★★ V5.6 智慧版面修正 (自動換行不擠壓) ★★★ */
     .row-1 { 
         display: flex; 
-        align-items: flex-start; /* 讓內容靠上對齊，支援換行 */
+        flex-wrap: wrap; /* 允許太長時換行 */
+        align-items: center; 
         gap: 8px; 
         margin-bottom: 6px; 
     }
     
-    .name-group {
-        display: flex;
-        flex-wrap: wrap; /* 允許折行 */
-        align-items: baseline; /* 文字底部對齊 */
-        gap: 8px;
-        flex: 1; /* 佔據中間大部分空間 */
-    }
-
     .txt-name { 
         font-size: 22px; 
         font-weight: 800; 
         color: #222; 
         white-space: nowrap; /* 名字絕對不換行 */
-        line-height: 1.2;
     }
 
     .txt-role { 
@@ -166,7 +158,7 @@
         padding: 2px 6px; 
         border-radius: 4px; 
         line-height: 1.4;
-        /* 如果太長，它會自己跑到下一行 */
+        /* 不設定 nowrap，讓它太長時自然斷行 */
     }
 
     .tag-yb { 
@@ -174,7 +166,7 @@
         border: 1px solid #b3e5fc; background: #e1f5fe; 
         padding: 2px 8px; border-radius: 4px; 
         flex-shrink: 0; font-weight: 500;
-        margin-left: auto; /* 強制靠右 */
+        margin-left: auto; /* 強制靠最右邊 */
     }
 
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -244,7 +236,7 @@
     <div class="login-form">
       
       <div id="line-login-area">
-        <button class="btn-line-login" onclick="liff.login()">
+        <button class="btn-line-login" onclick="openLineApp()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
           用 LINE 帳號登入
         </button>
@@ -268,7 +260,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.5</div>
+        <div class="version-badge">v5.6</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -369,6 +361,11 @@
              resolve(false); 
            });
       });
+    }
+
+    // ★★★ 使用官方 LIFF 短網址，這是喚起 App 的最佳方式 ★★★
+    function openLineApp() {
+        window.location.href = "https://liff.line.me/" + MY_LIFF_ID;
     }
 
     function fetchMembers() {
@@ -491,7 +488,6 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
-    // ★★★ V5.5 版面優化：名字職稱同一行，太長自動換行，名字絕對不動 ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -514,10 +510,8 @@
             <div class="card-right">
               
               <div class="row-1">
-                <div class="name-group">
-                   <span class="txt-name">${m.name}</span>
-                   ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
-                </div>
+                <span class="txt-name">${m.name}</span>
+                ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
                 ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
               </div>
 
