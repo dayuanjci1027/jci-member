@@ -21,7 +21,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: var(--bg-color); margin: 0; padding: 0;
       color: var(--text-dark); -webkit-tap-highlight-color: transparent;
-      /* 防止 iOS 回彈效果，讓畫面更固定 */
       overscroll-behavior-y: none;
     }
     body.noscroll { overflow: hidden; }
@@ -38,14 +37,13 @@
     #loading-text { font-size: 14px; color: #666; font-weight: bold; }
 
     /* =========================================
-       1. 登入介面 (極度壓縮版)
+       1. 登入介面
        ========================================= */
     #login-view {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
       background: #fff; z-index: 99999; flex-direction: column; align-items: center; justify-content: flex-start;
       overflow-y: auto;
     }
-    /* ★★★ 修改 1：高度縮小，從 260px 改為 160px ★★★ */
     .login-banner {
       width: 100%; height: 160px; min-height: 160px;
       background: linear-gradient(135deg, var(--jci-navy) 0%, var(--jci-blue) 100%);
@@ -54,7 +52,6 @@
       margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,60,136,0.2);
       flex-shrink: 0;
     }
-    /* 圖示縮小 */
     .banner-icon { font-size: 32px; margin-bottom: 8px; background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .banner-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .banner-subtitle { font-size: 13px; opacity: 0.9; }
@@ -68,14 +65,14 @@
     .login-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: 600; color: white; background: var(--jci-navy); border: none; border-radius: 8px; cursor: pointer; }
     .error-msg { color: #ff3b3b; font-size: 13px; text-align: center; font-weight: bold; min-height: 18px; }
 
-    /* ★★★ 修改 2：LINE 按鈕改到最上面，並設為顯眼綠色 ★★★ */
+    /* LINE 按鈕 */
     .btn-line-login {
       width: 100%; padding: 14px; 
       background-color: var(--jci-green); color: white; 
       border: none; border-radius: 8px; 
       font-size: 18px; font-weight: bold; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); /* 加陰影讓它更像主要按鈕 */
+      box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3);
       margin-bottom: 10px;
     }
     .btn-line-login:active { background-color: #05b34c; transform: scale(0.98); }
@@ -136,9 +133,38 @@
     .avatar-img img { width: 100%; height: 100%; object-fit: cover; }
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-    .row-1 { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
-    .txt-name { font-size: 22px; font-weight: 800; color: #222; }
-    .txt-role { font-size: 14px; color: #666; font-weight: normal; background: #f0f2f5; padding: 2px 6px; border-radius: 4px; }
+    
+    /* ★★★ 修正名字錯位問題的關鍵 CSS ★★★ */
+    .row-1 { 
+        display: flex; 
+        align-items: center; /* 讓名字和職稱垂直置中 */
+        gap: 8px; 
+        margin-bottom: 6px; 
+        overflow: hidden; /* 防止撐爆 */
+    }
+    .txt-name { 
+        font-size: 22px; 
+        font-weight: 800; 
+        color: #222; 
+        white-space: nowrap; /* ★★★ 絕對不換行 ★★★ */
+        flex-shrink: 0;      /* ★★★ 絕對不縮小 ★★★ */
+    }
+    .txt-role { 
+        font-size: 14px; 
+        color: #666; 
+        font-weight: normal; 
+        background: #f0f2f5; 
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        /* 讓職稱太長時可以自己適應，不要擠名字 */
+        flex: 1; 
+        min-width: 0; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+    }
+    /* ★★★ 修正結束 ★★★ */
+
     .tag-yb { font-size: 13px; color: var(--jci-blue); border: 1px solid #b3e5fc; background: #e1f5fe; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500; margin-left: auto; }
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge-honor { background: var(--jci-navy); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
@@ -207,7 +233,7 @@
     <div class="login-form">
       
       <div id="line-login-area">
-        <button class="btn-line-login" onclick="liff.login()">
+        <button class="btn-line-login" onclick="openLineApp()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
           用 LINE 帳號登入
         </button>
@@ -231,7 +257,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.2</div>
+        <div class="version-badge">v5.3</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -278,7 +304,7 @@
     // ==========================================
     const MY_LIFF_ID = "2008793289-PIQx5rgr"; 
     
-    // ★★★ 已經換上你給的正確 GAS 網址 ★★★
+    // GAS 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
 
     // 全域變數
@@ -304,7 +330,7 @@
            throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
         }
 
-        // ★★★ 判斷顯示：如果在 LINE App 裡，隱藏手動 LINE 按鈕 ★★★
+        // 如果在 LINE App 裡，隱藏喚起按鈕
         if (liff.isInClient()) {
            document.getElementById('line-login-area').style.display = 'none';
         }
@@ -332,6 +358,12 @@
              resolve(false); 
            });
       });
+    }
+
+    // ★★★ 關鍵函式：強制喚起 LINE App (透過 LIFF URL) ★★★
+    function openLineApp() {
+        // 直接跳轉到 LIFF 連結，手機會偵測並打開 LINE App
+        window.location.href = "https://liff.line.me/" + MY_LIFF_ID;
     }
 
     function fetchMembers() {
@@ -475,7 +507,7 @@
             </div>
             <div class="card-right">
               <div class="row-1">
-                <div style="display:flex; align-items:baseline; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
                   <span class="txt-name">${m.name}</span>
                   ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
                 </div>
@@ -497,7 +529,7 @@
     }
 
     // ==========================================
-    // ★ 詳細頁邏輯 (含滑動返回)
+    // ★ 詳細頁邏輯
     // ==========================================
     const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
     const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
