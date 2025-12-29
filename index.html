@@ -134,39 +134,39 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* ★★★ V5.6 智慧版面修正 (自動換行不擠壓) ★★★ */
-    .row-1 { 
-        display: flex; 
-        flex-wrap: wrap; /* 允許太長時換行 */
-        align-items: center; 
-        gap: 8px; 
-        margin-bottom: 6px; 
+    /* ★★★ V5.7 版面分層設計 (沈寬亦完美修正版) ★★★ */
+    /* 第一層：名字 (靠左) + YB (靠右) */
+    .row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
     }
-    
     .txt-name { 
-        font-size: 22px; 
-        font-weight: 800; 
-        color: #222; 
+        font-size: 22px; font-weight: 800; color: #222; 
         white-space: nowrap; /* 名字絕對不換行 */
     }
-
-    .txt-role { 
-        font-size: 14px; 
-        color: #666; 
-        font-weight: normal; 
-        background: #f0f2f5; 
-        padding: 2px 6px; 
-        border-radius: 4px; 
-        line-height: 1.4;
-        /* 不設定 nowrap，讓它太長時自然斷行 */
-    }
-
     .tag-yb { 
         font-size: 13px; color: var(--jci-blue); 
         border: 1px solid #b3e5fc; background: #e1f5fe; 
         padding: 2px 8px; border-radius: 4px; 
         flex-shrink: 0; font-weight: 500;
-        margin-left: auto; /* 強制靠最右邊 */
+    }
+
+    /* 第二層：職稱 (獨立一行) */
+    .row-role {
+        margin-bottom: 8px;
+        display: flex;
+    }
+    .txt-role { 
+        font-size: 14px; 
+        color: #666; 
+        font-weight: normal; 
+        background: #f0f2f5; 
+        padding: 3px 8px; 
+        border-radius: 4px; 
+        line-height: 1.4;
+        /* 讓長職稱可以自然換行，不會被切掉 */
     }
 
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -236,7 +236,7 @@
     <div class="login-form">
       
       <div id="line-login-area">
-        <button class="btn-line-login" onclick="openLineApp()">
+        <button class="btn-line-login" onclick="loginWithLine()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
           用 LINE 帳號登入
         </button>
@@ -260,7 +260,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.6</div>
+        <div class="version-badge">v5.7</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -306,8 +306,6 @@
     // ★ 設定區
     // ==========================================
     const MY_LIFF_ID = "2008793289-PIQx5rgr"; 
-    
-    // GAS 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
 
     // 全域變數
@@ -333,7 +331,6 @@
            throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
         }
 
-        // 如果在 LINE App 裡，隱藏喚起按鈕
         if (liff.isInClient()) {
            document.getElementById('line-login-area').style.display = 'none';
         }
@@ -363,9 +360,12 @@
       });
     }
 
-    // ★★★ 使用官方 LIFF 短網址，這是喚起 App 的最佳方式 ★★★
-    function openLineApp() {
-        window.location.href = "https://liff.line.me/" + MY_LIFF_ID;
+    // ★★★ 修正函式：明確告訴 LINE 驗證完要回到這裡 ★★★
+    function loginWithLine() {
+        // 使用 liff.login 並帶入 redirectUri，這是解決登入迴圈的標準解法
+        if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: window.location.href });
+        }
     }
 
     function fetchMembers() {
@@ -488,6 +488,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
+    // ★★★ V5.7 渲染邏輯：名字YB上層，職稱獨立下層 ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -509,11 +510,12 @@
             </div>
             <div class="card-right">
               
-              <div class="row-1">
+              <div class="row-top">
                 <span class="txt-name">${m.name}</span>
-                ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
                 ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
               </div>
+
+              ${m.role ? `<div class="row-role"><span class="txt-role">${m.role}</span></div>` : ''}
 
               ${ (m.badge || m.company) ? `
               <div class="row-2">
