@@ -134,40 +134,47 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* ★★★ 版面結構修正 CSS ★★★ */
-    /* 名字與 YB 標籤放在同一排，確保置頂對齊 */
-    .row-top { 
+    /* ★★★ 版面結構修正：名字不動，職稱可換行，YB靠右 ★★★ */
+    .row-1 { 
         display: flex; 
-        justify-content: space-between; 
-        align-items: center;
-        margin-bottom: 4px; 
+        align-items: flex-start; /* 讓內容靠上對齊，支援換行 */
+        gap: 8px; 
+        margin-bottom: 6px; 
     }
+    
+    .name-group {
+        display: flex;
+        flex-wrap: wrap; /* 允許折行 */
+        align-items: baseline; /* 文字底部對齊 */
+        gap: 8px;
+        flex: 1; /* 佔據中間大部分空間 */
+    }
+
     .txt-name { 
         font-size: 22px; 
         font-weight: 800; 
         color: #222; 
-        white-space: nowrap; 
+        white-space: nowrap; /* 名字絕對不換行 */
+        line-height: 1.2;
     }
-    /* YB 標籤樣式 */
-    .tag-yb { 
-        font-size: 13px; color: var(--jci-blue); 
-        border: 1px solid #b3e5fc; background: #e1f5fe; 
-        padding: 2px 8px; border-radius: 4px; 
-        flex-shrink: 0; font-weight: 500;
-    }
-    /* 職稱獨立一排 */
-    .row-role {
-        margin-bottom: 8px;
-        display: flex;
-    }
+
     .txt-role { 
         font-size: 14px; 
         color: #666; 
         font-weight: normal; 
         background: #f0f2f5; 
-        padding: 3px 8px; 
+        padding: 2px 6px; 
         border-radius: 4px; 
         line-height: 1.4;
+        /* 如果太長，它會自己跑到下一行 */
+    }
+
+    .tag-yb { 
+        font-size: 13px; color: var(--jci-blue); 
+        border: 1px solid #b3e5fc; background: #e1f5fe; 
+        padding: 2px 8px; border-radius: 4px; 
+        flex-shrink: 0; font-weight: 500;
+        margin-left: auto; /* 強制靠右 */
     }
 
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -237,7 +244,7 @@
     <div class="login-form">
       
       <div id="line-login-area">
-        <button class="btn-line-login" onclick="openLineApp()">
+        <button class="btn-line-login" onclick="liff.login()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
           用 LINE 帳號登入
         </button>
@@ -261,7 +268,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.4</div>
+        <div class="version-badge">v5.5</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -362,12 +369,6 @@
              resolve(false); 
            });
       });
-    }
-
-    // ★★★ 修正喚起 App 的指令：改用 line.me/R/app/... ★★★
-    function openLineApp() {
-        // 這個指令在 iOS 和 Android 上是強制喚起 LINE App 並打開 LIFF 的標準做法
-        window.location.href = "https://line.me/R/app/" + MY_LIFF_ID;
     }
 
     function fetchMembers() {
@@ -490,7 +491,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
-    // ★★★ 重新設計的卡片渲染 (名字與YB在上，職稱在下) ★★★
+    // ★★★ V5.5 版面優化：名字職稱同一行，太長自動換行，名字絕對不動 ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -512,12 +513,13 @@
             </div>
             <div class="card-right">
               
-              <div class="row-top">
-                <span class="txt-name">${m.name}</span>
+              <div class="row-1">
+                <div class="name-group">
+                   <span class="txt-name">${m.name}</span>
+                   ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
+                </div>
                 ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
               </div>
-
-              ${m.role ? `<div class="row-role"><span class="txt-role">${m.role}</span></div>` : ''}
 
               ${ (m.badge || m.company) ? `
               <div class="row-2">
