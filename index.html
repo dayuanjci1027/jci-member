@@ -27,7 +27,7 @@
     body.noscroll { overflow: hidden; }
 
     /* =========================================
-       ★★★ V6.0 字體放大專用 CSS (Z-Mode) ★★★
+       ★★★ V6.1 字體放大專用 CSS (只保留 1.2 與 1.5) ★★★
        ========================================= */
     
     /* Level 1: 1.2倍 (舒適) */
@@ -48,7 +48,6 @@
     body.z-15 .search-input { font-size: 22px !important; }
     body.z-15 .dt-name { font-size: 44px !important; }
     body.z-15 .dt-row { font-size: 22px !important; padding: 18px 0 !important; }
-
     /* ========================================= */
 
     /* 讀取遮罩 */
@@ -136,7 +135,7 @@
     .title-row { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; padding: 0 20px; }
     .main-title { font-size: 22px; font-weight: 700; color: #333; }
     
-    /* 版本號移下來以免跟放大按鈕打架 */
+    /* 版本號 */
     .version-badge { font-size: 11px; color: #999; margin-left: 8px; background: #eee; padding: 2px 6px; border-radius: 10px; }
     
     .credit-text { text-align: center; font-size: 12px; color: #888; margin-bottom: 16px; }
@@ -298,12 +297,12 @@
       
       <div class="btn-logout" onclick="doLogout()">登出</div>
       
-      <div id="btn-font" class="btn-zoom" onclick="cycleFont()">字體 x1.0</div>
+      <div id="btn-font" class="btn-zoom" onclick="cycleFont()">放大 x1.0</div>
 
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v6.0</div>
+        <div class="version-badge">v6.1</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -359,10 +358,10 @@
     let activeMode = 'ALL';
     let sortOrder = 0;
 
-    // ★★★ 字體控制邏輯 ★★★
-    let zoomIndex = 0; // 0=1.0, 1=1.2, 2=1.5, 3=2.0
-    const zoomLevels = [1.0, 1.2, 1.5, 2.0];
-    const zoomClasses = ['', 'z-12', 'z-15', 'z-20'];
+    // ★★★ V6.1 字體控制邏輯 (移除 2.0x) ★★★
+    let zoomIndex = 0; 
+    const zoomLevels = [1.0, 1.2, 1.5]; // 只留三個層級
+    const zoomClasses = ['', 'z-12', 'z-15'];
 
     // ==========================================
     // ★ 系統啟動
@@ -372,6 +371,8 @@
       const savedZoom = localStorage.getItem('jci_zoom_idx');
       if (savedZoom) {
          zoomIndex = parseInt(savedZoom, 10);
+         // 防止舊的 2.0x 設定導致錯誤
+         if (zoomIndex >= zoomLevels.length) zoomIndex = 0;
          applyZoom();
       }
 
@@ -407,24 +408,22 @@
       }
     };
 
-    // ★★★ 字體循環切換函式 ★★★
+    // ★★★ V6.1 字體循環切換函式 ★★★
     function cycleFont() {
         zoomIndex = (zoomIndex + 1) % zoomLevels.length;
-        localStorage.setItem('jci_zoom_idx', zoomIndex); // 記憶設定
+        localStorage.setItem('jci_zoom_idx', zoomIndex); 
         applyZoom();
     }
 
     function applyZoom() {
-        // 清除所有 zoom class
-        document.body.classList.remove('z-12', 'z-15', 'z-20');
+        document.body.classList.remove('z-12', 'z-15');
         
-        // 加入當前的 zoom class
         if (zoomIndex > 0) {
             document.body.classList.add(zoomClasses[zoomIndex]);
         }
         
-        // 更新按鈕文字
-        document.getElementById('btn-font').textContent = "字體 x" + zoomLevels[zoomIndex];
+        // 更新按鈕文字為 "放大 x..."
+        document.getElementById('btn-font').textContent = "放大 x" + zoomLevels[zoomIndex];
     }
 
     function initLiff() {
@@ -558,7 +557,6 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
-    // ★★★ 渲染邏輯 (V5.8: 緊湊版面 + 自動換行) ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
