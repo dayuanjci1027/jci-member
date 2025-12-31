@@ -22,8 +22,44 @@
       background: var(--bg-color); margin: 0; padding: 0;
       color: var(--text-dark); -webkit-tap-highlight-color: transparent;
       overscroll-behavior-y: none;
+      transition: all 0.2s ease; /* 讓放大過程有滑順感 */
     }
     body.noscroll { overflow: hidden; }
+
+    /* =========================================
+       ★★★ V6.0 字體放大專用 CSS (Z-Mode) ★★★
+       ========================================= */
+    
+    /* Level 1: 1.2倍 (舒適) */
+    body.z-12 .txt-name { font-size: 26px !important; }
+    body.z-12 .txt-role { font-size: 17px !important; }
+    body.z-12 .txt-phone { font-size: 19px !important; font-weight: 700; }
+    body.z-12 .tag-yb { font-size: 15px !important; }
+    body.z-12 .search-input { font-size: 19px !important; }
+    body.z-12 .dt-name { font-size: 38px !important; }
+    body.z-12 .dt-row { font-size: 19px !important; padding: 16px 0 !important; }
+
+    /* Level 2: 1.5倍 (清晰) */
+    body.z-15 .txt-name { font-size: 33px !important; }
+    body.z-15 .txt-role { font-size: 21px !important; }
+    body.z-15 .txt-phone { font-size: 24px !important; font-weight: 700; }
+    body.z-15 .tag-yb { font-size: 18px !important; }
+    body.z-15 .btn-call { font-size: 18px !important; padding: 8px 20px !important; }
+    body.z-15 .search-input { font-size: 22px !important; }
+    body.z-15 .dt-name { font-size: 44px !important; }
+    body.z-15 .dt-row { font-size: 22px !important; padding: 18px 0 !important; }
+
+    /* Level 3: 2.0倍 (超大 - 需強制換行以防破版) */
+    body.z-20 .txt-name { font-size: 44px !important; width: 100%; display: block; margin-bottom: 5px; }
+    body.z-20 .txt-role { font-size: 28px !important; display: inline-block; margin-top: 5px; }
+    body.z-20 .txt-phone { font-size: 32px !important; font-weight: 800; color: var(--jci-navy); }
+    body.z-20 .tag-yb { font-size: 22px !important; padding: 4px 12px !important; }
+    body.z-20 .btn-call { font-size: 22px !important; padding: 12px 24px !important; width: 100%; justify-content: center; margin-top: 10px; }
+    body.z-20 .row-3 { flex-direction: column; align-items: flex-start; gap: 5px; } /* 電話與按鈕分行 */
+    body.z-20 .dt-name { font-size: 50px !important; }
+    body.z-20 .dt-row { font-size: 26px !important; padding: 22px 0 !important; display: block; }
+    body.z-20 .dt-label { width: 100% !important; margin-bottom: 5px; color: var(--jci-blue); }
+    /* ========================================= */
 
     /* 讀取遮罩 */
     #loading-mask {
@@ -95,10 +131,24 @@
     
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
+    /* ★★★ 字體大小切換按鈕 (右上角) ★★★ */
+    .btn-zoom {
+      position: absolute; top: 20px; right: 15px;
+      font-size: 13px; color: var(--jci-blue); cursor: pointer;
+      padding: 6px 12px; border: 1px solid var(--jci-blue); border-radius: 20px;
+      font-weight: bold; background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      transition: all 0.1s; user-select: none;
+    }
+    .btn-zoom:active { transform: scale(0.95); background: #e1f5fe; }
+
     .org-name { margin-top: 20px; text-align: center; font-size: 26px; font-weight: 800; color: var(--jci-navy); letter-spacing: 1px; line-height: 1.2; margin-bottom: 8px; }
     .title-row { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; padding: 0 20px; }
     .main-title { font-size: 22px; font-weight: 700; color: #333; }
-    .version-badge { position: absolute; right: 20px; font-size: 12px; color: white; background: var(--jci-blue); padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+    
+    /* 版本號移下來以免跟放大按鈕打架 */
+    .version-badge { font-size: 11px; color: #999; margin-left: 8px; background: #eee; padding: 2px 6px; border-radius: 10px; }
+    
     .credit-text { text-align: center; font-size: 12px; color: #888; margin-bottom: 16px; }
 
     .search-wrapper { padding: 0 20px; max-width: 600px; margin: 0 auto; }
@@ -134,10 +184,10 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* ★★★ V5.8 恢復你喜歡的緊湊版面 (Name + Role + YB 同一行) ★★★ */
+    /* Name + Role + YB (V5.8 版面，支援自動換行) */
     .row-1 { 
         display: flex; 
-        flex-wrap: wrap; /* 允許太長時換行，這是關鍵 */
+        flex-wrap: wrap; /* 允許太長時換行 */
         align-items: center; 
         gap: 8px; 
         margin-bottom: 6px; 
@@ -147,7 +197,7 @@
         font-size: 22px; 
         font-weight: 800; 
         color: #222; 
-        white-space: nowrap; /* 名字絕對不換行，確保整齊 */
+        white-space: nowrap; /* 名字不換行 */
     }
 
     .txt-role { 
@@ -158,7 +208,6 @@
         padding: 2px 6px; 
         border-radius: 4px; 
         line-height: 1.4;
-        /* 職稱太長時，會自動折到下一行，不會把名字擠壞 */
     }
 
     .tag-yb { 
@@ -166,7 +215,7 @@
         border: 1px solid #b3e5fc; background: #e1f5fe; 
         padding: 2px 8px; border-radius: 4px; 
         flex-shrink: 0; font-weight: 500;
-        margin-left: auto; /* 強制靠右，保持整齊 */
+        margin-left: auto; /* 強制靠右 */
     }
 
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -256,11 +305,15 @@
   <div class="page-container">
     <div class="header-area">
       <div class="top-bar"></div>
+      
       <div class="btn-logout" onclick="doLogout()">登出</div>
+      
+      <div id="btn-font" class="btn-zoom" onclick="cycleFont()">字體 x1.0</div>
+
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v5.8</div>
+        <div class="version-badge">v6.0</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -316,10 +369,22 @@
     let activeMode = 'ALL';
     let sortOrder = 0;
 
+    // ★★★ 字體控制邏輯 ★★★
+    let zoomIndex = 0; // 0=1.0, 1=1.2, 2=1.5, 3=2.0
+    const zoomLevels = [1.0, 1.2, 1.5, 2.0];
+    const zoomClasses = ['', 'z-12', 'z-15', 'z-20'];
+
     // ==========================================
     // ★ 系統啟動
     // ==========================================
     window.onload = async function() {
+      // 1. 還原上次的字體設定
+      const savedZoom = localStorage.getItem('jci_zoom_idx');
+      if (savedZoom) {
+         zoomIndex = parseInt(savedZoom, 10);
+         applyZoom();
+      }
+
       try {
         const [liffResult, apiResult] = await Promise.all([
           initLiff(),
@@ -351,6 +416,26 @@
         showLoginView();
       }
     };
+
+    // ★★★ 字體循環切換函式 ★★★
+    function cycleFont() {
+        zoomIndex = (zoomIndex + 1) % zoomLevels.length;
+        localStorage.setItem('jci_zoom_idx', zoomIndex); // 記憶設定
+        applyZoom();
+    }
+
+    function applyZoom() {
+        // 清除所有 zoom class
+        document.body.classList.remove('z-12', 'z-15', 'z-20');
+        
+        // 加入當前的 zoom class
+        if (zoomIndex > 0) {
+            document.body.classList.add(zoomClasses[zoomIndex]);
+        }
+        
+        // 更新按鈕文字
+        document.getElementById('btn-font').textContent = "字體 x" + zoomLevels[zoomIndex];
+    }
 
     function initLiff() {
       return new Promise(resolve => {
@@ -483,7 +568,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
-    // ★★★ V5.8 恢復你喜歡的緊湊版面，但加入自動換行保護 ★★★
+    // ★★★ 渲染邏輯 (V5.8: 緊湊版面 + 自動換行) ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
