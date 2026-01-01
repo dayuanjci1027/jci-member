@@ -27,10 +27,9 @@
     body.noscroll { overflow: hidden; }
 
     /* =========================================
-       ★★★ V6.1 字體放大專用 CSS (只保留 1.2 與 1.5) ★★★
+       字體放大專用 CSS
        ========================================= */
-    
-    /* Level 1: 1.2倍 (舒適) */
+    /* Level 1: 1.2倍 */
     body.z-12 .txt-name { font-size: 26px !important; }
     body.z-12 .txt-role { font-size: 17px !important; }
     body.z-12 .txt-phone { font-size: 19px !important; font-weight: 700; }
@@ -39,7 +38,7 @@
     body.z-12 .dt-name { font-size: 38px !important; }
     body.z-12 .dt-row { font-size: 19px !important; padding: 16px 0 !important; }
 
-    /* Level 2: 1.5倍 (清晰) */
+    /* Level 2: 1.5倍 */
     body.z-15 .txt-name { font-size: 33px !important; }
     body.z-15 .txt-role { font-size: 21px !important; }
     body.z-15 .txt-phone { font-size: 24px !important; font-weight: 700; }
@@ -48,7 +47,6 @@
     body.z-15 .search-input { font-size: 22px !important; }
     body.z-15 .dt-name { font-size: 44px !important; }
     body.z-15 .dt-row { font-size: 22px !important; padding: 18px 0 !important; }
-    /* ========================================= */
 
     /* 讀取遮罩 */
     #loading-mask {
@@ -81,7 +79,7 @@
     .banner-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .banner-subtitle { font-size: 13px; opacity: 0.9; }
     
-    .login-form { width: 85%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; }
+    .login-form { width: 85%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 60px; }
     
     .input-label { font-size: 13px; color: var(--jci-navy); font-weight: 600; margin-bottom: 4px; display: block; }
     .login-input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box; outline: none; background: #f8faff; }
@@ -134,10 +132,7 @@
     .org-name { margin-top: 20px; text-align: center; font-size: 26px; font-weight: 800; color: var(--jci-navy); letter-spacing: 1px; line-height: 1.2; margin-bottom: 8px; }
     .title-row { position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; padding: 0 20px; }
     .main-title { font-size: 22px; font-weight: 700; color: #333; }
-    
-    /* 版本號 */
     .version-badge { font-size: 11px; color: #999; margin-left: 8px; background: #eee; padding: 2px 6px; border-radius: 10px; }
-    
     .credit-text { text-align: center; font-size: 12px; color: #888; margin-bottom: 16px; }
 
     .search-wrapper { padding: 0 20px; max-width: 600px; margin: 0 auto; }
@@ -173,39 +168,17 @@
 
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
-    /* Name + Role + YB (V5.8 版面，支援自動換行) */
+    /* V5.8 緊湊版面 */
     .row-1 { 
         display: flex; 
-        flex-wrap: wrap; /* 允許太長時換行 */
+        flex-wrap: wrap; 
         align-items: center; 
         gap: 8px; 
         margin-bottom: 6px; 
     }
-    
-    .txt-name { 
-        font-size: 22px; 
-        font-weight: 800; 
-        color: #222; 
-        white-space: nowrap; /* 名字不換行 */
-    }
-
-    .txt-role { 
-        font-size: 14px; 
-        color: #666; 
-        font-weight: normal; 
-        background: #f0f2f5; 
-        padding: 2px 6px; 
-        border-radius: 4px; 
-        line-height: 1.4;
-    }
-
-    .tag-yb { 
-        font-size: 13px; color: var(--jci-blue); 
-        border: 1px solid #b3e5fc; background: #e1f5fe; 
-        padding: 2px 8px; border-radius: 4px; 
-        flex-shrink: 0; font-weight: 500;
-        margin-left: auto; /* 強制靠右 */
-    }
+    .txt-name { font-size: 22px; font-weight: 800; color: #222; white-space: nowrap; }
+    .txt-role { font-size: 14px; color: #666; font-weight: normal; background: #f0f2f5; padding: 2px 6px; border-radius: 4px; line-height: 1.4; }
+    .tag-yb { font-size: 13px; color: var(--jci-blue); border: 1px solid #b3e5fc; background: #e1f5fe; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500; margin-left: auto; }
 
     .row-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge-honor { background: var(--jci-navy); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
@@ -302,7 +275,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v6.2</div>
+        <div class="version-badge">v6.4</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -358,20 +331,18 @@
     let activeMode = 'ALL';
     let sortOrder = 0;
 
-    // ★★★ V6.1 字體控制邏輯 (移除 2.0x) ★★★
+    // 字體放大
     let zoomIndex = 0; 
-    const zoomLevels = [1.0, 1.2, 1.5]; // 只留三個層級
+    const zoomLevels = [1.0, 1.2, 1.5];
     const zoomClasses = ['', 'z-12', 'z-15'];
 
     // ==========================================
     // ★ 系統啟動
     // ==========================================
     window.onload = async function() {
-      // 1. 還原上次的字體設定
       const savedZoom = localStorage.getItem('jci_zoom_idx');
       if (savedZoom) {
          zoomIndex = parseInt(savedZoom, 10);
-         // 防止舊的 2.0x 設定導致錯誤
          if (zoomIndex >= zoomLevels.length) zoomIndex = 0;
          applyZoom();
       }
@@ -389,7 +360,7 @@
            throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
         }
 
-        // 如果在 LINE App 裡，隱藏喚起按鈕
+        // 如果在 LINE App 裡，隱藏按鈕
         if (liff.isInClient()) {
            document.getElementById('line-login-area').style.display = 'none';
         }
@@ -408,7 +379,6 @@
       }
     };
 
-    // ★★★ V6.1 字體循環切換函式 ★★★
     function cycleFont() {
         zoomIndex = (zoomIndex + 1) % zoomLevels.length;
         localStorage.setItem('jci_zoom_idx', zoomIndex); 
@@ -417,12 +387,7 @@
 
     function applyZoom() {
         document.body.classList.remove('z-12', 'z-15');
-        
-        if (zoomIndex > 0) {
-            document.body.classList.add(zoomClasses[zoomIndex]);
-        }
-        
-        // 更新按鈕文字為 "放大 x..."
+        if (zoomIndex > 0) document.body.classList.add(zoomClasses[zoomIndex]);
         document.getElementById('btn-font').textContent = "放大 x" + zoomLevels[zoomIndex];
     }
 
@@ -557,7 +522,6 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
-    // ★★★ V6.2 最終渲染邏輯：排序 (會長優先、夫人其次) ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -686,7 +650,7 @@
     }, {passive:true});
 
     // ==========================================
-    // ★ 排序與篩選 (V6.2 夫人排序優化)
+    // ★ 排序與篩選
     // ==========================================
     function filterList() { filterAndSort(); }
 
@@ -750,18 +714,13 @@
                const numA = getNum(a.badge);
                const numB = getNum(b.badge);
                
-               // 先比屆數 (如果屆數不同，直接決定順序)
-               if (numA !== numB) {
-                   return (sortOrder === 1) ? numA - numB : numB - numA;
-               }
+               // 先比屆數
+               if (numA !== numB) return (sortOrder === 1) ? numA - numB : numB - numA;
                
-               // 如果屆數相同 (例如都是02屆)，則比較是否為夫人
-               // "夫人" 包含在 badge 中，如果是夫人，權重 +1，讓她排在後面
-               const isWifeA = (a.badge && a.badge.includes('夫人')) ? 1 : 0;
-               const isWifeB = (b.badge && b.badge.includes('夫人')) ? 1 : 0;
-               
-               // 我們希望：會長(0) 在前，夫人(1) 在後
-               return isWifeA - isWifeB;
+               // 屆數相同，夫人(1)排在會長(0)後面
+               const isSpouseA = (a.badge && (a.badge.includes('夫人') || a.badge.includes('夫婿'))) ? 1 : 0;
+               const isSpouseB = (b.badge && (b.badge.includes('夫人') || b.badge.includes('夫婿'))) ? 1 : 0;
+               return isSpouseA - isSpouseB;
             }
             return 0;
          });
