@@ -27,9 +27,9 @@
     body.noscroll { overflow: hidden; }
 
     /* =========================================
-       字體放大專用 CSS
+       1. 字體放大設定 (Zoom CSS)
        ========================================= */
-    /* Level 1: 1.2倍 */
+    /* 1.2倍 (舒適) */
     body.z-12 .txt-name { font-size: 26px !important; }
     body.z-12 .txt-role { font-size: 17px !important; }
     body.z-12 .txt-phone { font-size: 19px !important; font-weight: 700; }
@@ -38,7 +38,7 @@
     body.z-12 .dt-name { font-size: 38px !important; }
     body.z-12 .dt-row { font-size: 19px !important; padding: 16px 0 !important; }
 
-    /* Level 2: 1.5倍 */
+    /* 1.5倍 (清晰) */
     body.z-15 .txt-name { font-size: 33px !important; }
     body.z-15 .txt-role { font-size: 21px !important; }
     body.z-15 .txt-phone { font-size: 24px !important; font-weight: 700; }
@@ -48,6 +48,9 @@
     body.z-15 .dt-name { font-size: 44px !important; }
     body.z-15 .dt-row { font-size: 22px !important; padding: 18px 0 !important; }
 
+    /* =========================================
+       2. 基礎介面樣式
+       ========================================= */
     /* 讀取遮罩 */
     #loading-mask {
       position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
@@ -59,9 +62,7 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #loading-text { font-size: 14px; color: #666; font-weight: bold; }
 
-    /* =========================================
-       1. 登入介面
-       ========================================= */
+    /* 登入畫面 */
     #login-view {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
       background: #fff; z-index: 99999; flex-direction: column; align-items: center; justify-content: flex-start;
@@ -79,16 +80,14 @@
     .banner-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .banner-subtitle { font-size: 13px; opacity: 0.9; }
     
-    .login-form { width: 85%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 60px; }
-    
+    .login-form { width: 85%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; }
     .input-label { font-size: 13px; color: var(--jci-navy); font-weight: 600; margin-bottom: 4px; display: block; }
     .login-input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box; outline: none; background: #f8faff; }
     .login-input:focus { border-color: var(--jci-blue); background: #fff; }
-    
     .login-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: 600; color: white; background: var(--jci-navy); border: none; border-radius: 8px; cursor: pointer; }
     .error-msg { color: #ff3b3b; font-size: 13px; text-align: center; font-weight: bold; min-height: 18px; }
 
-    /* LINE 按鈕 */
+    /* LINE 登入按鈕 */
     .btn-line-login {
       width: 100%; padding: 14px; 
       background-color: var(--jci-green); color: white; 
@@ -99,14 +98,13 @@
       margin-bottom: 10px;
     }
     .btn-line-login:active { background-color: #05b34c; transform: scale(0.98); }
-    
     .divider { margin: 5px 0 15px 0; text-align: center; color: #999; font-size: 12px; position: relative; }
     .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: #eee; }
     .divider::before { left: 0; }
     .divider::after { right: 0; }
 
     /* =========================================
-       2. 主列表介面
+       3. 主頁面與卡片樣式
        ========================================= */
     .page-container { display: none; width: 100%; min-height: 100vh; }
     .header-area {
@@ -118,7 +116,7 @@
     
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
-    /* 字體大小切換按鈕 */
+    /* 右上角放大按鈕 */
     .btn-zoom {
       position: absolute; top: 20px; right: 15px;
       font-size: 13px; color: var(--jci-blue); cursor: pointer;
@@ -169,13 +167,7 @@
     .card-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
     
     /* V5.8 緊湊版面 */
-    .row-1 { 
-        display: flex; 
-        flex-wrap: wrap; 
-        align-items: center; 
-        gap: 8px; 
-        margin-bottom: 6px; 
-    }
+    .row-1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
     .txt-name { font-size: 22px; font-weight: 800; color: #222; white-space: nowrap; }
     .txt-role { font-size: 14px; color: #666; font-weight: normal; background: #f0f2f5; padding: 2px 6px; border-radius: 4px; line-height: 1.4; }
     .tag-yb { font-size: 13px; color: var(--jci-blue); border: 1px solid #b3e5fc; background: #e1f5fe; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; font-weight: 500; margin-left: auto; }
@@ -189,28 +181,13 @@
     .btn-call span { margin-left: 4px; }
 
     /* =========================================
-       3. 詳細頁 (Detail View)
+       4. 詳細頁 (Detail View)
        ========================================= */
-    #detail-view {
-      display: none; position: fixed; inset: 0; z-index: 100; background: #fff;
-      max-width: 600px; left: 50%; transform: translateX(-50%);
-      box-shadow: 0 0 30px rgba(0,0,0,0.1);
-    }
+    #detail-view { display: none; position: fixed; inset: 0; z-index: 100; background: #fff; max-width: 600px; left: 50%; transform: translateX(-50%); box-shadow: 0 0 30px rgba(0,0,0,0.1); }
     @media (max-width: 600px) { #detail-view { left: 0; transform: translateX(0); max-width: 100%; } }
-
-    .float-back-btn {
-      position: absolute; top: 20px; left: 20px; width: 44px; height: 44px;
-      background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      color: white; font-size: 24px; font-weight: bold; text-decoration: none; z-index: 999;
-      backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
+    .float-back-btn { position: absolute; top: 20px; left: 20px; width: 44px; height: 44px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; text-decoration: none; z-index: 999; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     .detail-scroll-container { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #fff; }
-    .hero-image-area {
-      width: 100%; height: auto; min-height: 250px; background: linear-gradient(to bottom, #f0f4f8, #fff);
-      display: flex; align-items: center; justify-content: center;
-      border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; position: relative; z-index: 1;
-      padding: 40px 0 20px 0;
-    }
+    .hero-image-area { width: 100%; height: auto; min-height: 250px; background: linear-gradient(to bottom, #f0f4f8, #fff); display: flex; align-items: center; justify-content: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; position: relative; z-index: 1; padding: 40px 0 20px 0; }
     .hero-image { position: static; width: 85%; max-width: 320px; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 4px solid white; }
     .hero-fallback { position: static; width: 85%; max-width: 320px; aspect-ratio: 1 / 1; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 80px; font-weight: bold; color: #fff; background: #ccc; border: 4px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
     .detail-content { padding: 10px 20px 60px; }
@@ -222,7 +199,6 @@
     .pill-navy { background: var(--jci-navy); color: white; }
     .pill-blue { background: #e1f5fe; color: var(--jci-blue); border: 1px solid #b3e5fc; }
     .pill-green { background: var(--jci-green); color: white; text-decoration: none; box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3); }
-    
     .dt-table { background: #f8faff; border-radius: 16px; padding: 10px 20px; }
     .dt-row { display: flex; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid #eef2f5; font-size: 16px; line-height: 1.6; }
     .dt-row:last-child { border-bottom: none; }
@@ -243,9 +219,7 @@
       <div class="banner-title">會員通訊錄</div>
       <div class="banner-subtitle">請輸入身分證字號與出生年月日</div>
     </div>
-    
     <div class="login-form">
-      
       <div id="line-login-area">
         <button class="btn-line-login" onclick="liff.login()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
@@ -253,13 +227,11 @@
         </button>
         <div class="divider">或使用帳號密碼</div>
       </div>
-
       <label class="input-label">身分證字號 (帳號)</label>
       <input type="text" id="login-acc" class="login-input" placeholder="A123456789" oninput="this.value = this.value.toUpperCase()" style="text-transform:uppercase;">
       <label class="input-label">西元出生年月日 (密碼)</label>
       <input type="password" id="login-pwd" class="login-input" placeholder="例如 19900101">
       <div id="login-error" class="error-msg"></div>
-      
       <button class="login-btn" onclick="attemptLogin()">登入查詢</button>
     </div>
   </div>
@@ -269,7 +241,6 @@
       <div class="top-bar"></div>
       
       <div class="btn-logout" onclick="doLogout()">登出</div>
-      
       <div id="btn-font" class="btn-zoom" onclick="cycleFont()">放大 x1.0</div>
 
       <div class="org-name">大園國際青年商會</div>
@@ -322,7 +293,7 @@
     // ==========================================
     const MY_LIFF_ID = "2008793289-PIQx5rgr"; 
     
-    // GAS 網址
+    // ★★★ GAS 網址 ★★★
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxFY3E-bA1WzWMNOixDXbXyOJ0flebfs-6nyPokYWsKXXKYWYhcXuMeQAXoRRUSHsNB/exec"; 
 
     // 全域變數
@@ -330,8 +301,8 @@
     let labelsData = {};
     let activeMode = 'ALL';
     let sortOrder = 0;
-
-    // 字體放大
+    
+    // 字體控制
     let zoomIndex = 0; 
     const zoomLevels = [1.0, 1.2, 1.5];
     const zoomClasses = ['', 'z-12', 'z-15'];
@@ -340,6 +311,7 @@
     // ★ 系統啟動
     // ==========================================
     window.onload = async function() {
+      // 1. 還原字體
       const savedZoom = localStorage.getItem('jci_zoom_idx');
       if (savedZoom) {
          zoomIndex = parseInt(savedZoom, 10);
@@ -360,11 +332,12 @@
            throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
         }
 
-        // 如果在 LINE App 裡，隱藏按鈕
+        // LINE APP 內隱藏按鈕
         if (liff.isInClient()) {
            document.getElementById('line-login-area').style.display = 'none';
         }
 
+        // 自動登入判斷
         if (liffResult && liff.isLoggedIn()) {
            updateLoading("正在驗證身分...");
            const profile = await liff.getProfile();
@@ -379,6 +352,7 @@
       }
     };
 
+    // 字體切換函式
     function cycleFont() {
         zoomIndex = (zoomIndex + 1) % zoomLevels.length;
         localStorage.setItem('jci_zoom_idx', zoomIndex); 
@@ -387,10 +361,13 @@
 
     function applyZoom() {
         document.body.classList.remove('z-12', 'z-15');
-        if (zoomIndex > 0) document.body.classList.add(zoomClasses[zoomIndex]);
+        if (zoomIndex > 0) {
+            document.body.classList.add(zoomClasses[zoomIndex]);
+        }
         document.getElementById('btn-font').textContent = "放大 x" + zoomLevels[zoomIndex];
     }
 
+    // LIFF & GAS 核心函式
     function initLiff() {
       return new Promise(resolve => {
          liff.init({ liffId: MY_LIFF_ID })
@@ -411,9 +388,6 @@
       }).then(res => res.json());
     }
 
-    // ==========================================
-    // ★ 驗證與登入邏輯
-    // ==========================================
     function checkLineBinding(userId) {
       fetch(GAS_API_URL, {
         method: 'POST',
@@ -503,9 +477,7 @@
       }
     }
 
-    // ==========================================
-    // ★ 介面切換與渲染
-    // ==========================================
+    // 介面切換
     function updateLoading(text) { document.getElementById('loading-text').textContent = text; }
     
     function showLoginView() {
@@ -522,6 +494,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
+    // 列表渲染 (V5.8 版面 - 名字不換行, 職稱可換行)
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -542,13 +515,11 @@
               <div class="avatar-img">${imgHtml}</div>
             </div>
             <div class="card-right">
-              
               <div class="row-1">
                 <span class="txt-name">${m.name}</span>
                 ${m.role ? `<span class="txt-role">${m.role}</span>` : ''}
                 ${m.tag ? `<div class="tag-yb">${m.tag}</div>` : ''}
               </div>
-
               ${ (m.badge || m.company) ? `
               <div class="row-2">
                 <div class="badge-honor" style="${m.badge?'':'display:none'}">${m.badge}</div>
@@ -564,9 +535,7 @@
       container.innerHTML = html;
     }
 
-    // ==========================================
-    // ★ 詳細頁邏輯
-    // ==========================================
+    // 詳細頁
     const detailCols = ["C","F","G","H","I","J","K","L","M","N"];
     const colKeyMap = {"C":"colC","F":"colF","G":"colG","H":"colH","I":"colI","J":"colJ","K":"colK","L":"colL","M":"colM","N":"colN"};
 
@@ -650,7 +619,7 @@
     }, {passive:true});
 
     // ==========================================
-    // ★ 排序與篩選
+    // ★ 排序與篩選 (V6.4 智慧排序邏輯)
     // ==========================================
     function filterList() { filterAndSort(); }
 
@@ -685,6 +654,7 @@
       filterAndSort();
     }
 
+    // ★★★ V6.4 關鍵：優化屆數解析邏輯 ★★★
     function filterAndSort() {
       const q = document.getElementById("search").value.trim().toLowerCase();
       let filtered = membersData.filter(m => (m.name+m.badge+m.role+m.company+m.phone).toLowerCase().includes(q));
@@ -708,19 +678,31 @@
                valA = a.colM || ""; valB = b.colM || "";
                if (!valA && !valB) return 0; if(!valA) return 1; if(!valB) return -1;
                return (sortOrder === 1) ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            
             } else if (activeMode === 'PRES' || activeMode === 'CHAIR') {
-               const getNum = s => { const m = (s||"").match(/(\d+)/); return m ? parseInt(m[0],10) : 0; };
+               
+               // ★ 智慧提取屆數 (優先找「XX屆」，找不到才找「XX數字」)
+               const getNum = s => { 
+                   const m = (s||"").match(/(\d+)\s*屆/); // 嚴格匹配 "數字+屆"
+                   if (m) return parseInt(m[1], 10);
+                   
+                   // 如果沒有寫屆，但有寫年份，為了排序正常，我們忽略年份(太大)
+                   // 這裡假設如果沒有屆，就回傳 0，讓它排到最後或最前
+                   return 0; 
+               };
                
                const numA = getNum(a.badge);
                const numB = getNum(b.badge);
                
-               // 先比屆數
-               if (numA !== numB) return (sortOrder === 1) ? numA - numB : numB - numA;
+               // 1. 先比屆數 (02會比03小，解決了年份干擾)
+               if (numA !== numB) {
+                   return (sortOrder === 1) ? numA - numB : numB - numA;
+               }
                
-               // 屆數相同，夫人(1)排在會長(0)後面
-               const isSpouseA = (a.badge && (a.badge.includes('夫人') || a.badge.includes('夫婿'))) ? 1 : 0;
-               const isSpouseB = (b.badge && (b.badge.includes('夫人') || b.badge.includes('夫婿'))) ? 1 : 0;
-               return isSpouseA - isSpouseB;
+               // 2. 屆數相同時，夫人(含關鍵字)排在後面 (會長優先)
+               const isWifeA = (a.badge && a.badge.includes('夫人')) ? 1 : 0;
+               const isWifeB = (b.badge && b.badge.includes('夫人')) ? 1 : 0;
+               return isWifeA - isWifeB;
             }
             return 0;
          });
