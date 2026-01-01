@@ -22,7 +22,7 @@
       background: var(--bg-color); margin: 0; padding: 0;
       color: var(--text-dark); -webkit-tap-highlight-color: transparent;
       overscroll-behavior-y: none;
-      transition: all 0.2s ease; /* 讓放大過程有滑順感 */
+      transition: all 0.2s ease;
     }
     body.noscroll { overflow: hidden; }
 
@@ -120,7 +120,7 @@
     
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
-    /* ★★★ 字體大小切換按鈕 (右上角) ★★★ */
+    /* 字體大小切換按鈕 */
     .btn-zoom {
       position: absolute; top: 20px; right: 15px;
       font-size: 13px; color: var(--jci-blue); cursor: pointer;
@@ -302,7 +302,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v6.1</div>
+        <div class="version-badge">v6.2</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -557,6 +557,7 @@
       document.querySelector('.page-container').style.display = 'block';
     }
 
+    // ★★★ V6.2 最終渲染邏輯：排序 (會長優先、夫人其次) ★★★
     function renderList(data) {
       const container = document.getElementById("list-view");
       if (data.length === 0) {
@@ -685,7 +686,7 @@
     }, {passive:true});
 
     // ==========================================
-    // ★ 排序與篩選
+    // ★ 排序與篩選 (V6.2 夫人排序優化)
     // ==========================================
     function filterList() { filterAndSort(); }
 
@@ -745,7 +746,22 @@
                return (sortOrder === 1) ? valA.localeCompare(valB) : valB.localeCompare(valA);
             } else if (activeMode === 'PRES' || activeMode === 'CHAIR') {
                const getNum = s => { const m = (s||"").match(/(\d+)/); return m ? parseInt(m[0],10) : 0; };
-               return (sortOrder === 1) ? getNum(a.badge)-getNum(b.badge) : getNum(b.badge)-getNum(a.badge);
+               
+               const numA = getNum(a.badge);
+               const numB = getNum(b.badge);
+               
+               // 先比屆數 (如果屆數不同，直接決定順序)
+               if (numA !== numB) {
+                   return (sortOrder === 1) ? numA - numB : numB - numA;
+               }
+               
+               // 如果屆數相同 (例如都是02屆)，則比較是否為夫人
+               // "夫人" 包含在 badge 中，如果是夫人，權重 +1，讓她排在後面
+               const isWifeA = (a.badge && a.badge.includes('夫人')) ? 1 : 0;
+               const isWifeB = (b.badge && b.badge.includes('夫人')) ? 1 : 0;
+               
+               // 我們希望：會長(0) 在前，夫人(1) 在後
+               return isWifeA - isWifeB;
             }
             return 0;
          });
