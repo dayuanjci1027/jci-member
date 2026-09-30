@@ -320,17 +320,8 @@
       }
 
       try {
-        const [liffResult, apiResult] = await Promise.all([
-          initLiff(),
-          fetchMembers()
-        ]);
-
-        if(apiResult.status === 'success') {
-           membersData = apiResult.members;
-           labelsData = apiResult.labels;
-        } else {
-           throw new Error("資料載入失敗: " + (apiResult.message || "未知原因"));
-        }
+        // 2026-09-30 安全修補：不再一打開就下載全部名單；驗證身分後才向後端取名單。
+        const liffResult = await initLiff();
 
         // LINE APP 內隱藏按鈕
         if (liff.isInClient()) {
@@ -379,28 +370,29 @@
       });
     }
 
-    function fetchMembers() {
+    // 驗證後取名單：payload = { acc, pwd } 或 { userId }
+    function fetchMembers(payload) {
       updateLoading("下載會員資料...");
       return fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getMembers' })
+        body: JSON.stringify({ action: 'getMembers', payload: payload })
       }).then(res => res.json());
     }
 
+    function applyMembers(res) {
+      membersData = res.members || [];
+      labelsData = res.labels || {};
+      showMainList();
+      renderList(membersData);
+    }
+
     function checkLineBinding(userId) {
-      fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'checkLineBinding', payload: { userId: userId } })
-      })
-      .then(res => res.json())
+      fetchMembers({ userId: userId })
       .then(res => {
          if(res.status === 'success') {
             updateLoading("驗證成功，登入中...");
-            document.getElementById('login-acc').value = res.acc;
-            document.getElementById('login-pwd').value = res.pwd;
-            attemptLogin(true);
+            applyMembers(res);
          } else {
             checkLocalStorage(); 
          }
@@ -430,36 +422,27 @@
         return;
       }
 
-      const user = membersData.find(m => m.acc === acc && m.pwd === pwd);
-
-      if (user) {
-        if (user.role && user.role.includes('前會員')) {
-           if(!isAuto) errDiv.textContent = "前會員無法登入";
-           return;
-        }
-
-        localStorage.setItem('jci_acc', acc);
-        localStorage.setItem('jci_pwd', pwd);
-
-        if (!isAuto) {
-          fetch(GAS_API_URL, { 
-             method: 'POST', 
-             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-             body: JSON.stringify({ action: 'recordLoginLog', payload: { name: user.name, account: acc } }) 
-          });
-        }
-        
-        showMainList();
-        renderList(membersData);
-
-      } else {
-        if(isAuto) {
-           showLoginView();
+      fetchMembers({ acc: acc, pwd: pwd }).then(res => {
+        if (res.status === 'success') {
+          localStorage.setItem('jci_acc', acc);
+          localStorage.setItem('jci_pwd', pwd);
+          if (!isAuto) {
+            fetch(GAS_API_URL, { 
+               method: 'POST', 
+               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+               body: JSON.stringify({ action: 'recordLoginLog', payload: { name: (res.me && res.me.name) || '', account: acc } }) 
+            });
+          }
+          applyMembers(res);
+        } else if (isAuto) {
+          showLoginView();
         } else {
-           errDiv.textContent = "帳號或密碼錯誤";
-           document.getElementById('login-pwd').value = "";
+          errDiv.textContent = res.message || "帳號或密碼錯誤";
+          document.getElementById('login-pwd').value = "";
         }
-      }
+      }).catch(() => {
+        if (isAuto) showLoginView(); else errDiv.textContent = "連線失敗，請稍後再試";
+      });
     }
 
     function doLogout() {
