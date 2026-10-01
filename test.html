@@ -114,8 +114,15 @@
     }
     .top-bar { background: var(--jci-navy); height: 12px; width: 100%; }
     
-    .dl-footer { text-align: center; padding: 18px 0 40px; }
-    .dl-footer span { font-size: 13px; color: #888; text-decoration: underline; cursor: pointer; }
+    .fab-wrap { position: fixed; right: 16px; bottom: 90px; z-index: 900; touch-action: none; }
+    .fab-btn { width: 52px; height: 52px; border-radius: 50%; background: #003a8c; color: #fff; font-size: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer; user-select: none; -webkit-user-select: none; }
+    .fab-panel { display: none; position: absolute; bottom: 62px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.2); min-width: 180px; overflow: hidden; }
+    .fab-panel.open { display: block; }
+    .fab-panel.below { bottom: auto; top: 62px; }
+    .fab-panel.left { right: auto; left: 0; }
+    .fab-item { padding: 14px 18px; font-size: 16px; color: #003a8c; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+    .fab-danger { color: #c0392b; }
+    .fab-hint { padding: 8px 18px; font-size: 12px; color: #aaa; }
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
     /* 右上角放大按鈕 */
@@ -243,8 +250,6 @@
     <div class="header-area">
       <div class="top-bar"></div>
       
-      <div class="btn-logout" onclick="doLogout()">登出</div>
-      <div id="btn-font" class="btn-zoom" onclick="cycleFont()">放大 x1.0</div>
 
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
@@ -266,7 +271,15 @@
     </div>
 
     <div id="list-view"></div>
-    <div class="dl-footer"><span onclick="downloadExcel()">下載通訊錄 Excel</span></div>
+    <div id="fab-menu" class="fab-wrap">
+      <div id="fab-btn" class="fab-btn" aria-label="選單">☰</div>
+      <div id="fab-panel" class="fab-panel">
+        <div id="btn-font" class="fab-item" onclick="cycleFont()">放大 x1.0</div>
+        <div class="fab-item" onclick="closeFab();downloadExcel()">下載通訊錄 Excel</div>
+        <div class="fab-item fab-danger" onclick="closeFab();doLogout()">登出</div>
+        <div class="fab-hint">按住 ☰ 可拖曳移動位置</div>
+      </div>
+    </div>
 
     <div id="detail-view">
       <a href="javascript:void(0)" class="float-back-btn" onclick="backToList()">←</a>
@@ -409,6 +422,24 @@
         XLSX.writeFile(wb, '大園青商會員通訊錄_' + ymd + '.xlsx');
       }).catch(() => alert('下載失敗，請稍後再試'));
     }
+
+
+    // 2026-10-01 MAX：放大／登出／下載收進漢堡選單，按鈕可自行拖曳調整位置（位置存在本機）
+    (function initFab() {
+      const wrap = document.getElementById('fab-menu'), btn = document.getElementById('fab-btn'), panel = document.getElementById('fab-panel');
+      try { const p = JSON.parse(localStorage.getItem('jci_fab_pos') || 'null'); if (p) { wrap.style.left = p.x + 'px'; wrap.style.top = p.y + 'px'; wrap.style.right = 'auto'; wrap.style.bottom = 'auto'; } } catch (e) {}
+      let sx, sy, ox, oy, moved = false, down = false;
+      function place() { const r = wrap.getBoundingClientRect(); panel.classList.toggle('below', r.top < 260); panel.classList.toggle('left', r.left < window.innerWidth / 2); }
+      btn.addEventListener('pointerdown', e => { down = true; moved = false; sx = e.clientX; sy = e.clientY; const r = wrap.getBoundingClientRect(); ox = r.left; oy = r.top; btn.setPointerCapture(e.pointerId); });
+      btn.addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - sx, dy = e.clientY - sy; if (!moved && Math.hypot(dx, dy) < 8) return; moved = true; panel.classList.remove('open');
+        const x = Math.min(Math.max(4, ox + dx), window.innerWidth - 56), y = Math.min(Math.max(4, oy + dy), window.innerHeight - 56);
+        wrap.style.left = x + 'px'; wrap.style.top = y + 'px'; wrap.style.right = 'auto'; wrap.style.bottom = 'auto'; });
+      btn.addEventListener('pointerup', e => { if (!down) return; down = false;
+        if (moved) { const r = wrap.getBoundingClientRect(); try { localStorage.setItem('jci_fab_pos', JSON.stringify({ x: r.left, y: r.top })); } catch (e) {} }
+        else { place(); panel.classList.toggle('open'); } });
+      document.addEventListener('click', e => { if (!wrap.contains(e.target)) panel.classList.remove('open'); });
+    })();
+    function closeFab() { document.getElementById('fab-panel').classList.remove('open'); }
 
     function checkLineBinding(userId) {
       fetchMembers({ userId: userId })
