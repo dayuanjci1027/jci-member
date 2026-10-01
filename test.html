@@ -346,6 +346,10 @@
         }
 
         // 自動登入判斷
+        const qs = location.search;
+        if (/[?&](code|liffClientId|liff\.state)=/.test(qs) || (liffResult && liff.isLoggedIn())) {
+          clientLog('jci-member init ok=' + liffResult + ' loggedIn=' + (liffResult && liff.isLoggedIn()) + ' qs=' + qs.replace(/code=[^&]+/, 'code=*').slice(0, 80));
+        }
         if (liffResult && liff.isLoggedIn()) {
            updateLoading("正在驗證身分...");
            const profile = await liff.getProfile();
@@ -382,6 +386,7 @@
            .then(() => resolve(true))
            .catch(err => {
              console.log("LIFF Init Error:", err);
+             clientLog('jci-member liff.init error: ' + (err && (err.code + ' ' + err.message)));
              resolve(false); 
            });
       });
@@ -458,9 +463,13 @@
     })();
     function closeFab() { document.getElementById('fab-panel').classList.remove('open'); }
 
+    function clientLog(msg) {
+      try { fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'lineClientLog', payload: { msg: msg, ua: navigator.userAgent } }) }); } catch (e) {}
+    }
     function checkLineBinding(userId) {
       fetchMembers({ userId: userId })
       .then(res => {
+         clientLog('jci-member getMembers(line) status=' + res.status + ' uid=…' + String(userId).slice(-4));
          if(res.status === 'success') {
             authPayload = { userId: userId };
             updateLoading("驗證成功，登入中...");
