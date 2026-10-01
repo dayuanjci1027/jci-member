@@ -114,7 +114,7 @@
     }
     .top-bar { background: var(--jci-navy); height: 12px; width: 100%; }
     
-    .btn-download { position: absolute; top: 52px; left: 15px; font-size: 13px; color: #1f6f43; cursor: pointer; padding: 4px 8px; border: 1px solid #b9dcc6; border-radius: 4px; background: #f3fbf6; }
+    .btn-download { grid-column: 1 / -1; }
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
     /* 右上角放大按鈕 */
@@ -244,7 +244,6 @@
       
       <div class="btn-logout" onclick="doLogout()">登出</div>
       <div id="btn-font" class="btn-zoom" onclick="cycleFont()">放大 x1.0</div>
-      <div class="btn-download" onclick="downloadExcel()">⬇ 下載 Excel</div>
 
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
@@ -262,6 +261,7 @@
         <div id="btn-pres" class="btn-sort" onclick="togglePres()">歷屆前會長<span></span></div>
         <div id="btn-chair" class="btn-sort" onclick="toggleChair()">歷屆前主席<span></span></div>
         <div id="btn-date" class="btn-sort" onclick="toggleDate()">入會日排序<span></span></div>
+        <div class="btn-sort btn-download" onclick="downloadExcel()">下載通訊錄 Excel</div>
       </div>
     </div>
 
