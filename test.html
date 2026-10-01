@@ -231,7 +231,7 @@
     </div>
     <div class="login-form">
       <div id="line-login-area">
-        <button class="btn-line-login" onclick="liff.login()">
+        <button class="btn-line-login" onclick="lineStart()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22 10.6C22 5.9 17.5 2 12 2S2 5.9 2 10.6c0 4.2 3.7 7.7 8.9 8.4v4.2l5.4-3c3.5-.6 5.7-3.4 5.7-6.6z"/></svg>
           用 LINE 帳號登入
         </button>
@@ -254,7 +254,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v6.6 · 2026/10/01</div>
+        <div class="version-badge">v6.7 · 2026/10/01</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -338,6 +338,9 @@
 
       try {
         // 2026-09-30 安全修補：不再一打開就下載全部名單；驗證身分後才向後端取名單。
+        if (lineReturn()) return;
+        const sess = (function(){ try { return localStorage.getItem('jci_sess'); } catch (e) { return null; } })();
+        if (sess) { fetchMembers({ session: sess }).then(r => { if (r.status === 'success') { authPayload = { session: sess }; applyMembers(r); } else { try { localStorage.removeItem('jci_sess'); } catch (e) {} location.reload(); } }); return; }
         const liffResult = await initLiff();
 
         // LINE APP 內隱藏按鈕
@@ -466,6 +469,32 @@
     function clientLog(msg) {
       try { fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'lineClientLog', payload: { msg: msg, ua: navigator.userAgent } }) }); } catch (e) {}
     }
+
+    // 2026-10-01：iPhone Safari 的 LIFF 登入接不起來，改用與 jci-hub 相同的 LINE 標準登入（跳 LINE → 帶 code 回來 → 後端驗證）
+    const LINE_CH = '2008793289', LINE_BACK = location.origin + location.pathname;
+    function lineStart() {
+      const st = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try { localStorage.setItem('line_state', st); } catch (e) {}
+      location.href = 'https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=' + LINE_CH + '&redirect_uri=' + encodeURIComponent(LINE_BACK) + '&state=' + st + '&scope=profile%20openid';
+    }
+    function lineReturn() {
+      const q = new URLSearchParams(location.search), code = q.get('code');
+      if (!code && !q.get('error')) return false;
+      history.replaceState(null, '', location.pathname);
+      if (!code) { clientLog('jci-member LINE 取消/錯誤 ' + q.get('error')); return false; }
+      updateLoading('LINE 登入中…');
+      fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'lineLogin', payload: { code: code, redirectUri: LINE_BACK } }) })
+        .then(r => r.json()).then(res => {
+          clientLog('jci-member lineLogin status=' + res.status);
+          if (res.status !== 'success') { alert(res.message || 'LINE 登入失敗，請改用帳號密碼'); showLoginView(); return; }
+          try { localStorage.setItem('jci_sess', res.session); } catch (e) {}
+          authPayload = { session: res.session };
+          if (res.members) { applyMembers(res); }
+          else { fetchMembers({ session: res.session }).then(r => r.status === 'success' ? applyMembers(r) : showLoginView()); }
+        }).catch(e => { clientLog('jci-member lineLogin 連線失敗 ' + (e && e.message)); showLoginView(); });
+      return true;
+    }
+
     function checkLineBinding(userId) {
       fetchMembers({ userId: userId })
       .then(res => {
@@ -531,6 +560,7 @@
       if(confirm('確定要登出並清除紀錄嗎？')) {
         localStorage.removeItem('jci_acc');
         localStorage.removeItem('jci_pwd');
+        localStorage.removeItem('jci_sess');
         
         document.getElementById('login-acc').value = "";
         document.getElementById('login-pwd').value = "";
