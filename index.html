@@ -254,7 +254,7 @@
       <div class="org-name">大園國際青年商會</div>
       <div class="title-row">
         <div class="main-title">會員通訊錄</div>
-        <div class="version-badge">v6.5 · 2026/10/01</div>
+        <div class="version-badge">v6.6 · 2026/10/01</div>
       </div>
       <div class="credit-text">2023會長 林振暉 製作</div>
 
@@ -419,7 +419,24 @@
         ws['!cols'] = res.header.map((h, i) => ({ wch: i === 14 ? 50 : (i === 9 ? 30 : 14) }));
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '通訊錄');
         const d = new Date(); const ymd = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-        XLSX.writeFile(wb, '大園青商會員通訊錄_' + ymd + '.xlsx');
+        const fname = '大園青商會員通訊錄_' + ymd + '.xlsx';
+        // iPhone Safari／LINE 內建瀏覽器常擋 blob 下載：先用系統分享（可存到檔案／傳 LINE），不支援才走一般下載
+        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const file = new File([buf], fname, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        // 下載資料要先等網路回來，Safari 規定分享／下載必須是「當下點擊」，所以資料備好後再請使用者點一次
+        const ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center';
+        ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px 20px;width:80%;max-width:320px;text-align:center;font-size:16px">通訊錄已準備好（' + res.rows.length + ' 位）<br><br><div id="dl-go" style="background:#003a8c;color:#fff;padding:12px;border-radius:10px;cursor:pointer">儲存 Excel 檔</div><div id="dl-x" style="margin-top:12px;color:#888;cursor:pointer">取消</div></div>';
+        document.body.appendChild(ov);
+        ov.querySelector('#dl-x').onclick = () => ov.remove();
+        ov.querySelector('#dl-go').onclick = () => {
+          ov.remove();
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], title: fname }).catch(() => {});
+          } else {
+            XLSX.writeFile(wb, fname);
+          }
+        };
       }).catch(() => alert('下載失敗，請稍後再試'));
     }
 
