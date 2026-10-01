@@ -114,7 +114,8 @@
     }
     .top-bar { background: var(--jci-navy); height: 12px; width: 100%; }
     
-    .btn-download { grid-column: 1 / -1; }
+    .dl-footer { text-align: center; padding: 18px 0 40px; }
+    .dl-footer span { font-size: 13px; color: #888; text-decoration: underline; cursor: pointer; }
     .btn-logout { position: absolute; top: 20px; left: 15px; font-size: 13px; color: #999; cursor: pointer; padding: 4px 8px; border: 1px solid #eee; border-radius: 4px; }
 
     /* 右上角放大按鈕 */
@@ -261,11 +262,11 @@
         <div id="btn-pres" class="btn-sort" onclick="togglePres()">歷屆前會長<span></span></div>
         <div id="btn-chair" class="btn-sort" onclick="toggleChair()">歷屆前主席<span></span></div>
         <div id="btn-date" class="btn-sort" onclick="toggleDate()">入會日排序<span></span></div>
-        <div class="btn-sort btn-download" onclick="downloadExcel()">下載通訊錄 Excel</div>
       </div>
     </div>
 
     <div id="list-view"></div>
+    <div class="dl-footer"><span onclick="downloadExcel()">下載通訊錄 Excel</span></div>
 
     <div id="detail-view">
       <a href="javascript:void(0)" class="float-back-btn" onclick="backToList()">←</a>
